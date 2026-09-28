@@ -54,3 +54,5 @@ Slack announcements, faster drafting, archive pages and audience feeds
   - Affects: People using the skill in Claude Code
 - **First releases in repositories without tags** — Without version tags, Shiplog now asks where the release starts instead of summarizing the whole history, uses the version in your package manifest as the starting point, and warns when you're on a feature branch rather than the main branch.
   - Affects: People using the skill in Claude Code
+
+[0.2.0]: https://mrxvision97.github.io/shiplog/changelog/#v0-2-0

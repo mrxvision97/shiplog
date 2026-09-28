@@ -9,7 +9,7 @@
       "tag_prefix": "v",
       "releases_dir": ".changelog/shiplog",
       "output_dir": "docs/changelog",
-      "base_url": "",
+      "base_url": "https://mrxvision97.github.io/shiplog/changelog",
       "changelog_md": true,
       "audiences": [
         {

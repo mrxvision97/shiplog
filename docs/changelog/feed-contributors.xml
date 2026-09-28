@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Shiplog changelog (Shiplog contributors)</title>
-<id>urn:shiplog:shiplog:contributors</id>
+<id>https://mrxvision97.github.io/shiplog/changelog/feed-contributors.xml</id>
 <updated>2026-09-28T00:00:00Z</updated>
+<link rel="alternate" type="text/html" href="https://mrxvision97.github.io/shiplog/changelog/"/>
+<link rel="self" type="application/atom+xml" href="https://mrxvision97.github.io/shiplog/changelog/feed-contributors.xml"/>
 <entry>
 <title>0.2.0 – Slack announcements, faster drafting, archive pages and audience feeds</title>
-<id>urn:shiplog:shiplog:contributors:0.2.0</id>
+<id>https://mrxvision97.github.io/shiplog/changelog/#v0-2-0</id>
 <updated>2026-09-28T00:00:00Z</updated>
+<link rel="alternate" type="text/html" href="https://mrxvision97.github.io/shiplog/changelog/#v0-2-0"/>
 <content type="html">&lt;h3&gt;Added&lt;/h3&gt;&lt;ul&gt;&lt;li&gt;&lt;strong&gt;Autocomplete for release files in your editor&lt;/strong&gt; &lt;p&gt;Release files and the config now point to a JSON Schema, so editors like VS Code suggest field names and flag mistakes while you type.&lt;/p&gt;&lt;p&gt;Who&amp;#x27;s affected: People using the skill in Claude Code, Shiplog contributors&lt;/p&gt;&lt;/li&gt;&lt;/ul&gt;</content>
 </entry>
 </feed>
