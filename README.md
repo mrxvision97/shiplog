@@ -33,7 +33,7 @@ git clone https://github.com/YOUR_ORG/shiplog
 cp -r shiplog/plugins/shiplog/skills/shiplog ~/.claude/skills/
 ```
 
-Requires Python 3.8+ and git. There are no other dependencies.
+Requires Python 3.10+ and git. There are no other dependencies.
 
 ## Use
 

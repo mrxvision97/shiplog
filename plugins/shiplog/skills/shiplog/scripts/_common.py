@@ -1,4 +1,4 @@
-"""Shared helpers for Shiplog scripts. Standard library only (Python 3.8+)."""
+"""Shared helpers for Shiplog scripts. Standard library only (Python 3.10+)."""
 import json
 import os
 import re

@@ -294,29 +294,35 @@ def render_json(app, releases, internal):
 def write(path, content):
     path = os.path.normpath(path)
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
         f.write(content)
-    print("  wrote %s" % path)
+    return path
 
 
-def render_app(app, root, internal):
+def render_app(app, root, internal, quiet=False):
+    """Write every output for APP. Returns the list of paths written."""
     releases, errors = load_releases(app, root)
     if errors:
         for p, m in errors:
             print("shiplog: %s: %s" % (p, m), file=sys.stderr)
         sys.exit(1)
-    print("== %s ==" % app["name"])
     out_dir = os.path.join(root, app["output_dir"])
-    write(os.path.join(out_dir, "index.html"), render_html(app, releases, internal=False))
-    write(os.path.join(out_dir, "feed.xml"), render_atom(app, releases))
-    write(os.path.join(out_dir, "changelog.json"), render_json(app, releases, internal=False))
+    files = {"index.html": render_html(app, releases, internal=False),
+             "feed.xml": render_atom(app, releases),
+             "changelog.json": render_json(app, releases, internal=False)}
     if internal:
-        write(os.path.join(out_dir, "internal.html"), render_html(app, releases, internal=True))
-        write(os.path.join(out_dir, "changelog.internal.json"), render_json(app, releases, internal=True))
+        files["internal.html"] = render_html(app, releases, internal=True)
+        files["changelog.internal.json"] = render_json(app, releases, internal=True)
+    written = [write(os.path.join(out_dir, name), content) for name, content in files.items()]
     md = app.get("changelog_md", True)
     if md:
         md_path = md if isinstance(md, str) else os.path.join(app.get("path", "."), "CHANGELOG.md")
-        write(os.path.join(root, md_path), render_markdown(app, releases))
+        written.append(write(os.path.join(root, md_path), render_markdown(app, releases)))
+    if not quiet:
+        print("== %s ==" % app["name"])
+        for p in written:
+            print("  wrote %s" % p)
+    return written
 
 
 def main(argv=None):

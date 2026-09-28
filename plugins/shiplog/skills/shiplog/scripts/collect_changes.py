@@ -6,13 +6,22 @@ contribute their PR title and the commits they brought in, and squash merges
 ("Subject (#N)") become one change each. Other commits stand alone.
 Conventional Commits are parsed when present; other commits get type "other".
 
+By default prints a compact summary, one line per change:
+  <type>[!][(scope)]  <PR or sha>  <subject>  [refs]  (N commits)  {labels}
+"!" marks a breaking change. --full prints everything as JSON.
+
+If the GitHub CLI is installed and authenticated, PR titles, bodies (truncated)
+and labels are fetched in one batched GraphQL call. Skipped silently otherwise,
+or with --no-gh / SHIPLOG_NO_GH=1.
+
 Usage:
-  collect_changes.py [--app ID] [--from REF] [--to REF] [--root DIR]
+  collect_changes.py [--app ID] [--from REF] [--to REF] [--full] [--no-gh] [--root DIR]
 """
 import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 
@@ -34,6 +43,8 @@ TYPE_PRIORITY = ["feat", "fix", "perf", "revert", "security", "deprecate"]
 SEP = "\x1e"  # record separator
 FSEP = "\x1f"  # field separator
 LOG_FORMAT = "--format=" + SEP + FSEP.join(["%H", "%P", "%an", "%ad", "%s", "%b"])
+PR_BODY_MAX = 500
+GH_MAX_PRS = 100
 SHALLOW_HINT = ("In GitHub Actions set `fetch-depth: 0` on actions/checkout; "
                 "locally run `git fetch --unshallow --tags`.")
 
@@ -225,13 +236,47 @@ def group_changes(commits, owner):
     return [pr_change(x, *by_pr[x]) if isinstance(x, str) else x for x in changes]
 
 
+def gh_enrich(changes, root):
+    """Add pr_title, pr_body and labels to PR changes with ONE gh GraphQL call.
+    Returns True if enrichment ran. Any failure is silent: this is optional."""
+    if os.environ.get("SHIPLOG_NO_GH") or not shutil.which("gh"):
+        return False
+    nums = sorted({int(c["pr"][1:]) for c in changes if (c.get("pr") or "").startswith("#")})[:GH_MAX_PRS]
+    if not nums:
+        return False
+    fields = " ".join("p%d: pullRequest(number: %d) { title body labels(first: 10) { nodes { name } } }"
+                      % (n, n) for n in nums)
+    query = ("query($owner: String!, $repo: String!) { repository(owner: $owner, name: $repo) { %s } }"
+             % fields)
+    try:
+        # gh fills {owner}/{repo} from the current repository's remote.
+        r = subprocess.run(["gh", "api", "graphql", "-F", "owner={owner}", "-F", "repo={repo}",
+                            "-f", "query=" + query], cwd=root, capture_output=True, text=True, timeout=20)
+        # Missing PR numbers produce GraphQL errors (non-zero exit) but the rest still has data.
+        repo = (json.loads(r.stdout or "{}").get("data") or {}).get("repository") or {}
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return False
+    for c in changes:
+        node = repo.get("p" + (c.get("pr") or "")[1:]) if (c.get("pr") or "").startswith("#") else None
+        if not node:
+            continue
+        body = " ".join((node.get("body") or "").split())
+        c["pr_title"] = node.get("title") or ""
+        c["pr_body"] = body if len(body) <= PR_BODY_MAX else body[:PR_BODY_MAX - 1] + "…"
+        c["labels"] = [x["name"] for x in (node.get("labels") or {}).get("nodes") or []]
+        if any("breaking" in x.lower() for x in c["labels"]):
+            c["breaking"] = True
+            c["likely_internal"] = False
+    return bool(repo)
+
+
 def latest_release_file(app, root):
     releases, _ = load_releases(app, root)
     versions = [r.get("version") for r in releases if parse_semver(str(r.get("version")))]
     return versions[0] if versions else None
 
 
-def collect(app, root=".", from_ref=None, to_ref="HEAD"):
+def collect(app, root=".", from_ref=None, to_ref="HEAD", use_gh=True):
     prefix = app.get("tag_prefix", "v")
     try:
         git(["rev-parse", "--git-dir"], root)
@@ -256,6 +301,7 @@ def collect(app, root=".", from_ref=None, to_ref="HEAD"):
     except RuntimeError as e:
         die("%s%s" % (e, (" " + SHALLOW_HINT) if shallow else ""))
     changes = group_changes(commits, owner)
+    enriched = gh_enrich(changes, root) if use_gh else False
 
     level = "patch"
     if any(c["breaking"] for c in changes):
@@ -297,11 +343,46 @@ def collect(app, root=".", from_ref=None, to_ref="HEAD"):
         "change_count": len(changes),
         "pr_count": sum(1 for c in changes if c.get("pr")),
         "counts_by_type": counts,
+        "pr_details": enriched,
         "breaking_count": sum(1 for c in changes if c["breaking"]),
         "likely_user_facing": [c for c in changes if not c["likely_internal"]],
         "likely_internal": [c for c in changes if c["likely_internal"]],
         "notes": notes,
     }
+
+
+def change_line(c, width=None):
+    head = c["type"] + ("!" if c["breaking"] else "") + ("(%s)" % c["scope"] if c.get("scope") else "")
+    subject = c.get("pr_title") or c["subject"]
+    if width and len(subject) > width:
+        subject = subject[:width - 1] + "…"
+    parts = [head, c.get("pr") or c["sha"][:7], subject]
+    refs = [r for r in c["refs"] if r != c.get("pr")]
+    if refs:
+        parts.append("[%s]" % ",".join(refs))
+    if len(c.get("commits", [])) > 1:
+        parts.append("(%d commits)" % len(c["commits"]))
+    if c.get("labels"):
+        parts.append("{%s}" % ",".join(c["labels"]))
+    line = "  ".join(parts)
+    if c.get("pr_body") and not width:
+        line += "\n    > " + (c["pr_body"][:160] + ("…" if len(c["pr_body"]) > 160 else ""))
+    return line
+
+
+def summarize(out):
+    """Compact text for the skill: a header, notes, then one line per change."""
+    lines = ["%s  %s  last=%s  suggest=%s (%s)  changes=%d commits=%d breaking=%d" % (
+        out["app"], out["range"], out["last_version"] or "-", out["suggested_version"] or "-",
+        out["bump"] or "-", out["change_count"], out["commit_count"], out["breaking_count"])]
+    lines += ["note: " + n for n in out["notes"]]
+    if out["likely_user_facing"]:
+        lines.append("USER-FACING:")
+        lines += [change_line(c) for c in out["likely_user_facing"]]
+    if out["likely_internal"]:
+        lines.append("LIKELY INTERNAL (skip unless users notice):")
+        lines += [change_line(c, width=60) for c in out["likely_internal"]]
+    return "\n".join(lines)
 
 
 def main(argv=None):
@@ -310,13 +391,17 @@ def main(argv=None):
     ap.add_argument("--from", dest="from_ref", help="start ref (exclusive). Default: last tag for the app")
     ap.add_argument("--to", dest="to_ref", default="HEAD")
     ap.add_argument("--root", default=".")
-    ap.add_argument("--full", action="store_true", help="print the full JSON (default)")
+    ap.add_argument("--full", action="store_true", help="print the full JSON instead of the summary")
+    ap.add_argument("--no-gh", action="store_true", help="don't fetch PR details with the GitHub CLI")
     ap.add_argument("--include-merges", action="store_true", help=argparse.SUPPRESS)  # obsolete: merges are grouped
     args = ap.parse_args(argv)
     app = select_app(load_config(args.root), args.app)
-    out = collect(app, args.root, args.from_ref, args.to_ref)
-    json.dump(out, sys.stdout, indent=2)
-    print()
+    out = collect(app, args.root, args.from_ref, args.to_ref, use_gh=not args.no_gh)
+    if args.full:
+        json.dump(out, sys.stdout, indent=2)
+        print()
+    else:
+        print(summarize(out))
 
 
 if __name__ == "__main__":

@@ -62,7 +62,7 @@ class ShiplogTest(unittest.TestCase):
             json.dump(data, f)
 
     def collect(self):
-        r = run("collect_changes.py", cwd=self.d)
+        r = run("collect_changes.py", "--full", "--no-gh", cwd=self.d)
         self.assertEqual(r.returncode, 0, r.stderr)
         return json.loads(r.stdout)
 
