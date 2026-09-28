@@ -82,6 +82,11 @@ class CollectTest(RepoCase):
         self.assertTrue(any("nothing to release" in n for n in out["notes"]))
 
 
+class RefsTest(unittest.TestCase):
+    def test_standards_are_not_ticket_refs(self):
+        self.assertEqual(collect_changes.find_refs("Use UTF-8 and ISO-8601, fixes PROJ-3 (#9)"), ["#9", "PROJ-3"])
+
+
 class FirstReleaseTest(RepoCase):
     tag = None
 

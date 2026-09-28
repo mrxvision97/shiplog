@@ -1,0 +1,33 @@
+{
+  "$schema": "https://raw.githubusercontent.com/YOUR_ORG/shiplog/main/plugins/shiplog/skills/shiplog/schema/config.schema.json",
+  "apps": [
+    {
+      "id": "shiplog",
+      "name": "Shiplog",
+      "description": "Changes to Shiplog, the Claude Code skill for plain-language, impact-aware changelogs.",
+      "path": ".",
+      "tag_prefix": "v",
+      "releases_dir": ".changelog/shiplog",
+      "output_dir": "docs/changelog",
+      "base_url": "",
+      "changelog_md": true,
+      "audiences": [
+        {
+          "id": "skill-users",
+          "label": "People using the skill in Claude Code"
+        },
+        {
+          "id": "ci-maintainers",
+          "label": "Maintainers of the Shiplog CI workflow"
+        },
+        {
+          "id": "contributors",
+          "label": "Shiplog contributors"
+        }
+      ],
+      "theme": {
+        "accent_color": "#4f46e5"
+      }
+    }
+  ]
+}

@@ -78,6 +78,10 @@ SEMVER_RE = re.compile(
     r"(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$"
 )
 
+# Uppercase-dash-number tokens that are standards, not tickets (UTF-8, ISO-8601, SHA-256...).
+NOT_TICKETS = {"UTF", "ISO", "SHA", "MD", "RFC", "CVE", "GHSA", "COVID", "HTTP", "TLS", "SSL",
+               "IPV", "WCAG", "PCI", "SOC", "ES", "ECMA", "IEEE", "X"}
+
 APP_DEFAULTS = {
     "path": ".",
     "tag_prefix": "v",

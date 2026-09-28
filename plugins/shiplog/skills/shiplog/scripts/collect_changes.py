@@ -26,7 +26,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import (die, load_config, load_releases, parse_semver,  # noqa: E402
+from _common import (NOT_TICKETS, die, load_config, load_releases, parse_semver,  # noqa: E402
                      select_app, semver_key)
 
 CC_RE = re.compile(r"^(?P<type>[a-zA-Z]+)(?:\((?P<scope>[^)]+)\))?(?P<bang>!)?:\s*(?P<subject>.+)$")
@@ -112,7 +112,8 @@ def bump(version, level):
 
 
 def find_refs(text):
-    refs = ["#" + n for n in REF_RE.findall(text)] + TICKET_RE.findall(text)
+    refs = ["#" + n for n in REF_RE.findall(text)] + [
+        t for t in TICKET_RE.findall(text) if t.split("-")[0] not in NOT_TICKETS]
     return sorted(set(refs), key=refs.index)
 
 

@@ -9,7 +9,7 @@
       "name": "shiplog",
       "source": "./plugins/shiplog",
       "description": "Write structured changelogs (what changed, who is affected, what to do) and publish an accessible changelog page, feed and CHANGELOG.md.",
-      "version": "0.1.0"
+      "version": "0.2.0"
     }
   ]
 }

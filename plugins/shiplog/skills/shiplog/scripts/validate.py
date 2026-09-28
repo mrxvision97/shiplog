@@ -17,7 +17,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import (ENTRY_TYPES, app_for_tag, audience_ids, load_config,  # noqa: E402
+from _common import (ENTRY_TYPES, NOT_TICKETS, app_for_tag, audience_ids, load_config,  # noqa: E402
                      load_releases, parse_semver, select_app)
 
 TITLE_MAX = 100
@@ -28,9 +28,6 @@ ALLOWED_ENTRY_KEYS = {"type", "title", "description", "audiences", "action_requi
                       "action_deadline", "breaking", "links", "internal_notes", "refs", "media",
                       "_needs_review"}
 
-# Uppercase-dash-number tokens that are standards, not tickets.
-NOT_TICKETS = {"UTF", "ISO", "SHA", "MD", "RFC", "CVE", "GHSA", "COVID", "HTTP", "TLS", "SSL",
-               "IPV", "WCAG", "PCI", "SOC", "ES", "ECMA", "IEEE", "X"}
 TICKET_RE = re.compile(r"\b([A-Z][A-Z0-9]+)-\d+\b")
 # "#1 priority" is not a PR; "(#12)", "PR #12", "fixes #12" and "#1234" are.
 PR_REF_RE = re.compile(r"(?:\b(?:PR|pull request|issue|fix(?:e[sd])?|close[sd]?|resolve[sd]?|see|refs?)\s+"
