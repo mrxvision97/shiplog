@@ -1,6 +1,6 @@
 {
   "name": "shiplog",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Write structured, plain-language changelogs (what changed, who is affected, what action to take) and publish an accessible changelog page, Atom feed and CHANGELOG.md.",
   "author": { "name": "Aman Kumar" },
   "homepage": "https://github.com/mrxvision97/shiplog",

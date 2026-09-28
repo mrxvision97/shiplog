@@ -2,6 +2,18 @@
 
 One file per release: `<releases_dir>/<version>.json`. The file name must equal the version.
 
+## How a release is shown
+
+The page follows the structure product teams like Linear, Raycast and Notion use:
+
+1. **Date and version** in a column on the left (above the release on phones).
+2. **Headline** (`title`), then the **intro** (`summary`) and an optional **hero image**.
+3. **Action required**: every entry with `action_required`, with its action and deadline, in one box.
+4. **Highlights**: entries with `highlight: true` as full sections with a heading, text, image and links.
+5. **Compact lists** for the rest: New, Improvements, Fixes, Security, Deprecations, Removed.
+
+Entries that affect specific audiences carry small audience labels; entries for `everyone` don't.
+
 ## Release
 
 | Field | Required | Notes |
@@ -9,7 +21,9 @@ One file per release: `<releases_dir>/<version>.json`. The file name must equal 
 | `$schema` | no | Points editors at `schema/release.schema.json` for autocomplete. Ignored by the scripts. |
 | `version` | yes | SemVer, e.g. `2.4.0`, `3.0.0-beta.1`. No `v` prefix. |
 | `date` | yes | `YYYY-MM-DD`, the day it reached users. |
-| `summary` | no | One-line headline, under 120 chars. Shown under the version and in the feed title. |
+| `title` | no | The release headline, under 100 chars, led by the main feature: "Bulk export and faster search". Falls back to `summary`, then the version. |
+| `summary` | no | One or two sentences introducing the release, under 280 chars. Shown under the headline (or as the headline when there's no `title`). |
+| `image` | no | Hero image under the headline: `{"url": "https://…", "alt": "What it shows"}`. `alt` is required. |
 | `entries` | yes | Non-empty list of entries. |
 | `yanked` | no | `true` if the release was withdrawn. Keep the file; the page marks it as withdrawn. |
 
@@ -25,7 +39,9 @@ One file per release: `<releases_dir>/<version>.json`. The file name must equal 
 | `action` | if action_required | yes | Exactly what to do. Imperative ("Regenerate your API key in Settings → API"). |
 | `action_deadline` | no | yes | `YYYY-MM-DD`. Expected for deprecations. |
 | `breaking` | no | yes | `true` forces `action_required: true`. |
-| `links` | no | yes | `[{"label": "Migration guide", "url": "https://..."}]` |
+| `links` | no | yes | `[{"label": "Migration guide", "url": "https://..."}]`. On highlights they read as "Migration guide →". |
+| `highlight` | no | yes | `true` shows the entry as a full section with its own heading, above the lists. Without any, new features (up to 3) are highlighted. |
+| `image` | no | yes | Screenshot for a highlight: `{"url": "https://…", "alt": "…"}`. `alt` is required. |
 | `internal_notes` | no | **internal only** | Support talking points, known issues, rollback, flag names. |
 | `refs` | no | **internal only** | PR numbers, ticket IDs, commit SHAs. |
 | `_needs_review` | no | never shown | Set by `import_changelog.py`. The validator warns until you confirm `audiences` and `action_required` and delete it. |
@@ -43,7 +59,8 @@ Fields marked internal only appear only in `internal.html` and `changelog.intern
   "$schema": "https://raw.githubusercontent.com/mrxvision97/shiplog/main/plugins/shiplog/skills/shiplog/schema/release.schema.json",
   "version": "3.0.0",
   "date": "2026-10-01",
-  "summary": "New API authentication and saved filters",
+  "title": "Saved filters and safer API keys",
+  "summary": "Save and share any filter on the Orders page. API keys now expire, so plan a rotation before March 31, 2027.",
   "entries": [
     {
       "type": "changed",
@@ -62,6 +79,8 @@ Fields marked internal only appear only in `internal.html` and `changelog.intern
       "type": "added",
       "title": "Save and share filters on the Orders page",
       "description": "Save any combination of filters and share it with teammates using a link.",
+      "highlight": true,
+      "image": {"url": "https://docs.example.com/img/saved-filters.png", "alt": "The Orders page with the Save filter menu open"},
       "audiences": ["end-users"],
       "action_required": false
     }

@@ -137,20 +137,21 @@ class PageTest(RepoCase):
 
     def test_translated_strings(self):
         self.config(lang="de", strings={
-            "title": "{name} Änderungsprotokoll", "whos_affected": "Betrifft:", "skip_link": "Zum Inhalt",
+            "title": "{name} Änderungsprotokoll", "heading": "Änderungsprotokoll", "whos_affected": "Betrifft:", "skip_link": "Zum Inhalt",
             "showing_all": "Alle {n} Änderungen.", "types": {"fixed": "Behoben"},
             "months": ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August",
                        "September", "Oktober", "November", "Dezember"], "date_format": "{day}. {month} {year}"})
         run("render.py", cwd=self.d)
         index = self.read("index.html")
         self.assertIn('<html lang="de">', index)
-        self.assertIn("<h1>Demo Änderungsprotokoll</h1>", index)
+        self.assertIn("<title>Demo Änderungsprotokoll</title>", index)
+        self.assertIn("<h1>Änderungsprotokoll</h1>", index)
         self.assertIn("Zum Inhalt", index)
         self.assertIn("Betrifft:", index)
         self.assertIn(">Behoben</h3>", index)
         self.assertIn('data-all="Alle {n} Änderungen."', index)
         self.assertRegex(index, r"15\. (Januar|Februar|März) 2026")
-        self.assertIn(">Added</h3>", index)  # untranslated keys fall back to English
+        self.assertIn(">Improvements</h3>", index)  # untranslated keys fall back to English
 
     def test_template_placeholders_in_content_are_not_expanded(self):
         self.write_release(release("1.9.0", "2026-09-01", summary="Literal {{lang}} and {{releases}}"))
@@ -193,3 +194,57 @@ class AxeTest(RepoCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LayoutTest(RepoCase):
+    """The production layout: headline, action box, highlights, then compact lists."""
+
+    def render(self, rel):
+        self.write_release(rel)
+        r = run("render.py", cwd=self.d)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        with open(os.path.join(self.d, "changelog", "demo", "index.html"), encoding="utf-8") as f:
+            return f.read()
+
+    def test_structure(self):
+        page = self.render({
+            "version": "2.0.0", "date": "2026-09-28", "title": "Bulk export and faster search",
+            "summary": "Export whole reports at once.",
+            "image": {"url": "https://x.test/hero.png", "alt": "The new export dialog"},
+            "entries": [
+                entry(type="fixed", title="Fixed duplicate emails", audiences=["everyone"]),
+                entry(type="changed", title="Keys expire", audiences=["developers"], breaking=True,
+                      action_required=True, action="Create a new key in Settings.", action_deadline="2027-03-31"),
+                entry(title="Bulk export", links=[{"label": "Read the guide", "url": "https://x.test/g"}]),
+                entry(title="Small new thing", highlight=False),
+            ]})
+        self.assertIn('<a href="#v2-0-0">Bulk export and faster search</a></h2>', page)
+        self.assertIn('<p class="intro">Export whole reports at once.</p>', page)
+        self.assertIn('<img src="https://x.test/hero.png" alt="The new export dialog"', page)
+        body = page[page.index('<main id="main">'):]
+        # Action box first, then highlights (new features), then sections in order.
+        order = [body.index(x) for x in ('class="callout"', 'class="entry highlight"', ">Improvements</h3>",
+                                         ">Fixes</h3>")]
+        self.assertEqual(order, sorted(order))
+        self.assertIn("Deadline: <time", body)
+        self.assertIn('Read the guide <span aria-hidden="true">→</span>', body)
+        # Audience labels only for targeted changes, never "Everyone".
+        self.assertIn('<span class="tag">API &amp; integration developers</span>', body)
+        self.assertNotIn('<span class="tag">Everyone</span>', body)
+        check_a11y(self, page)
+
+    def test_explicit_highlight_wins(self):
+        page = self.render({"version": "2.0.0", "date": "2026-09-28", "entries": [
+            entry(title="New A"), entry(title="New B"),
+            entry(type="changed", title="Big change", highlight=True)]})
+        self.assertIn('<h3 id="v2-0-0-h1">Big change</h3>', page)
+        self.assertNotIn(">New A</h3>", page)
+        self.assertIn("<strong>New A</strong>", page)
+        self.assertIn('<a href="#v2-0-0">2.0.0</a></h2>', page)  # no title or summary: the version
+
+    def test_image_needs_alt_text(self):
+        self.write_release({"version": "2.0.0", "date": "2026-09-28", "title": "X",
+                            "image": {"url": "https://x.test/a.png"}, "entries": [entry()]})
+        r = run("validate.py", cwd=self.d)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("image needs 'alt' text", r.stdout)

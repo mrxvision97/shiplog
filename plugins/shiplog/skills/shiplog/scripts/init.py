@@ -106,7 +106,8 @@ def main(argv=None):
     print("  app: %s (id %s), version tags look like %s1.2.3" % (name, app_id, prefix))
     md = os.path.join(args.root, args.path, "CHANGELOG.md")
     if os.path.exists(md) and not is_generated(md):
-        print("  found a hand-written %s. Shiplog won't overwrite it. To bring its history in, run\n"
+        print("  found a hand-written %s. Shiplog keeps it and adds each new release in the file's own\n"
+              "  format, without changing existing entries. To show its history on the changelog page too, run\n"
               "    shiplog.py import --app %s" % (os.path.relpath(md, args.root), app_id))
 
     if args.with_ci:

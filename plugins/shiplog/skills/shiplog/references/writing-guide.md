@@ -12,6 +12,16 @@ The reader is a customer, an admin, or a support agent skimming for one question
 6. **Actions are instructions.** Use the imperative mood. Name the exact place and the exact step. Include the deadline in the action text as well as in `action_deadline`.
 7. **Second person, present tense, active voice.** "You can now…", "Exports include…". Avoid "We are excited to announce".
 
+## The release: headline, intro, highlights
+
+Model it on how product teams publish (Linear, Raycast, Notion):
+
+- **`title` is a headline, led by the biggest change:** "Bulk export and faster search", "Brand-level access and guided tours for clients". Not "Release 2.4.0", not "Various improvements". Name one or two things; the page lists the rest.
+- **`summary` is the intro:** one or two sentences a reader can stop after. Say what they can do now.
+- **Highlight 1 to 3 entries** (`"highlight": true`): the changes worth a heading, a paragraph and ideally a screenshot. New capabilities and anything users will notice on day one. Everything else goes in the compact lists, where one or two sentences each is right.
+- **Images need alt text** that says what the screenshot shows ("The Orders page with the Save filter menu open").
+- **Small fixes can be grouped** into one entry ("Smaller fixes across the app") when each is a sentence. Split anything a support agent might be asked about.
+
 ## Titles
 
 - Start with the thing that changed. Keep it short, and don't end with a period.

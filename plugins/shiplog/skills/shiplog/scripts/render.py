@@ -22,6 +22,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from _common import (ENTRY_TYPES, TYPE_LABELS, audience_label, find_root, is_generated,  # noqa: E402
                      load_config, load_releases, select_app, ui_strings)
+import changelog_md  # noqa: E402
 import validate  # noqa: E402
 
 PROJECT_URL = "https://github.com/mrxvision97/shiplog"  # footer link; override with project_url
@@ -127,64 +128,144 @@ def audience_feeds(app):
 
 # HTML --------------------------------------------------------------------
 
-def render_entry(e, app, internal):
-    s = ui_strings(app)
-    auds = e.get("audiences", [])
-    badges = []
+# The order sections appear in, after the highlights (Linear/Raycast style).
+SECTION_ORDER = ["added", "changed", "fixed", "security", "deprecated", "removed"]
+AUTO_HIGHLIGHTS_MAX = 3
+
+
+def safe_links(e):
+    return [ln for ln in e.get("links") or [] if isinstance(ln, dict) and SAFE_URL_RE.match(str(ln.get("url", "")))]
+
+
+def image_html(img):
+    if not isinstance(img, dict) or not SAFE_URL_RE.match(str(img.get("url", ""))):
+        return ""
+    return ('<figure class="media"><img src="%s" alt="%s" loading="lazy" decoding="async"></figure>'
+            % (esc(img["url"]), esc(img.get("alt"))))
+
+
+def badges(e, s):
+    out = []
     if e.get("breaking"):
-        badges.append('<span class="badge breaking">%s</span>' % esc(s["breaking"]))
+        out.append('<span class="badge breaking">%s</span>' % esc(s["breaking"]))
     if e.get("action_required"):
-        badges.append('<span class="badge action">%s</span>' % esc(s["action_required"]))
-    badge_html = '<span class="badges">%s</span>' % "".join(badges) if badges else ""
-    parts = [
-        '<li class="entry" data-type="%s" data-audiences="%s" data-action="%s">'
-        % (esc(e.get("type")), esc(" ".join(auds)), "true" if e.get("action_required") else "false"),
-        "<h4>%s %s</h4>" % (esc(e.get("title")), badge_html),
-        text_to_html(e.get("description")),
-        '<p class="meta"><span>%s</span> %s</p>'
-        % (esc(s["whos_affected"]), esc(", ".join(audience_label(app, a) for a in auds))),
-    ]
-    if e.get("action_required"):
-        dl = ""
-        if e.get("action_deadline"):
-            dl = ' <span>%s <time datetime="%s">%s</time>.</span>' % (
-                esc(s["deadline"]), esc(e["action_deadline"]), fmt_date(e["action_deadline"], app))
-        parts.append('<div class="action-box"><strong>%s</strong>%s%s</div>'
-                     % (esc(s["what_to_do"]), text_to_html(e.get("action")), dl))
-    links = [ln for ln in e.get("links") or [] if isinstance(ln, dict) and SAFE_URL_RE.match(str(ln.get("url", "")))]
+        out.append('<span class="badge action">%s</span>' % esc(s["action_required"]))
+    return " ".join(out)
+
+
+def audience_tags(e, app):
+    """Small audience labels; nothing for changes that affect everyone."""
+    auds = [a for a in e.get("audiences", []) if a != "everyone"]
+    if not auds:
+        return ""
+    s = ui_strings(app)
+    return ('<p class="tags"><span class="sr-only">%s </span>%s</p>'
+            % (esc(s["whos_affected"]), "".join('<span class="tag">%s</span>' % esc(audience_label(app, a))
+                                                for a in auds)))
+
+
+def entry_data(e, extra_class=""):
+    return ('class="entry%s" data-type="%s" data-audiences="%s" data-action="%s"'
+            % (extra_class, esc(e.get("type")), esc(" ".join(e.get("audiences", []))),
+               "true" if e.get("action_required") else "false"))
+
+
+def internal_html(e, s, internal):
+    if not internal or not (e.get("internal_notes") or e.get("refs")):
+        return ""
+    inner = text_to_html(e.get("internal_notes", ""))
+    if e.get("refs"):
+        inner += "<p>%s %s</p>" % (esc(s["refs"]), esc(", ".join(e["refs"])))
+    return '<details class="internal"><summary>%s</summary>%s</details>' % (esc(s["internal_notes"]), inner)
+
+
+def highlights_of(entries):
+    """Entries shown as full sections. Explicit "highlight": true wins; otherwise
+    new features (up to AUTO_HIGHLIGHTS_MAX) and entries with an image."""
+    if any(e.get("highlight") is True for e in entries):
+        return [e for e in entries if e.get("highlight") is True]
+    added = [e for e in entries if e.get("type") == "added"]
+    auto = added if len(added) <= AUTO_HIGHLIGHTS_MAX else []
+    return [e for e in entries if e in auto or e.get("image") or e.get("media")]
+
+
+def render_highlight(e, app, internal, hid):
+    s = ui_strings(app)
+    links = safe_links(e)
+    parts = ['<section %s aria-labelledby="%s">' % (entry_data(e, " highlight"), hid),
+             '<h3 id="%s">%s</h3>' % (hid, " ".join(x for x in (esc(e.get("title")), badges(e, s)) if x)),
+             text_to_html(e.get("description")),
+             image_html(e.get("image") or e.get("media"))]
     if links:
         parts.append('<p class="links">%s</p>' % " ".join(
-            '<a href="%s">%s</a>' % (esc(ln["url"]), esc(ln["label"])) for ln in links))
-    if internal and (e.get("internal_notes") or e.get("refs")):
-        inner = text_to_html(e.get("internal_notes", ""))
-        if e.get("refs"):
-            inner += "<p>%s %s</p>" % (esc(s["refs"]), esc(", ".join(e["refs"])))
-        parts.append('<details class="internal"><summary>%s</summary>%s</details>'
-                     % (esc(s["internal_notes"]), inner))
-    parts.append("</li>")
-    return "\n".join(parts)
+            '<a href="%s">%s <span aria-hidden="true">→</span></a>' % (esc(ln["url"]), esc(ln["label"]))
+            for ln in links))
+    parts += [audience_tags(e, app), internal_html(e, s, internal), "</section>"]
+    return "\n".join(p for p in parts if p)
+
+
+def render_item(e, app, internal):
+    s = ui_strings(app)
+    links = safe_links(e)
+    return "".join([
+        "<li %s>" % entry_data(e),
+        '<p class="item-title">%s</p>' % " ".join(x for x in ("<strong>%s</strong>" % esc(e.get("title")),
+                                                            badges(e, s)) if x),
+        '<div class="item-desc">%s</div>' % text_to_html(e.get("description")),
+        ('<p class="links">%s</p>' % " ".join('<a href="%s">%s</a>' % (esc(ln["url"]), esc(ln["label"]))
+                                              for ln in links)) if links else "",
+        audience_tags(e, app), internal_html(e, s, internal), "</li>"])
+
+
+def action_callout(entries, app, sid):
+    """Stripe-style: everything readers must do, at the top of the release."""
+    s = ui_strings(app)
+    items = [e for e in entries if e.get("action_required")]
+    if not items:
+        return ""
+    lis = []
+    for e in items:
+        dl = ""
+        if e.get("action_deadline"):
+            dl = '<p class="deadline">%s <time datetime="%s">%s</time></p>' % (
+                esc(s["deadline"]), esc(e["action_deadline"]), fmt_date(e["action_deadline"], app))
+        badge = (' <span class="badge breaking">%s</span>' % esc(s["breaking"])) if e.get("breaking") else ""
+        lis.append('<li class="action-item" data-audiences="%s"><p class="item-title"><strong>%s</strong>%s</p>'
+                   '%s%s%s</li>' % (esc(" ".join(e.get("audiences", []))), esc(e.get("title")), badge,
+                                    text_to_html(e.get("action")), dl, audience_tags(e, app)))
+    return ('<aside class="callout" aria-labelledby="%s-action"><h3 id="%s-action">%s</h3><ul>%s</ul></aside>'
+            % (sid, sid, esc(s["what_to_do"]), "".join(lis)))
 
 
 def render_release(r, app, internal):
     s = ui_strings(app)
     v = r["version"]
     sid = slug(v)
-    head = ('<header><h2 id="%s"><a href="#%s">%s</a> <time datetime="%s">%s</time>%s</h2>'
-            % (sid, sid, esc(v), esc(r.get("date")), fmt_date(r.get("date"), app),
-               ' <span class="yanked">%s</span>' % esc(s["withdrawn"]) if r.get("yanked") else ""))
-    if r.get("summary"):
-        head += '<p class="summary">%s</p>' % esc(r["summary"])
-    head += "</header>"
-    groups = []
-    for t in ENTRY_TYPES:
-        items = [e for e in r.get("entries", []) if e.get("type") == t]
+    entries = r.get("entries", [])
+    headline = r.get("title") or r.get("summary") or v
+    intro = r.get("summary") if r.get("title") else None
+    rail = ('<div class="rail"><a class="date" href="#%s"><time datetime="%s">%s</time></a>'
+            '<span class="version">%s</span>%s</div>'
+            % (sid, esc(r.get("date")), fmt_date(r.get("date"), app), esc(v),
+               ' <span class="badge withdrawn">%s</span>' % esc(s["withdrawn"]) if r.get("yanked") else ""))
+    body = ['<h2 id="%s-title"><a href="#%s">%s</a></h2>' % (sid, sid, esc(headline))]
+    if intro:
+        body.append('<p class="intro">%s</p>' % esc(intro))
+    body.append(image_html(r.get("image")))
+    body.append(action_callout(entries, app, sid))
+    featured = highlights_of(entries)
+    for i, e in enumerate(featured):
+        body.append(render_highlight(e, app, internal, "%s-h%d" % (sid, i + 1)))
+    for t in SECTION_ORDER:
+        items = [e for e in entries if e.get("type") == t and e not in featured]
         if not items:
             continue
         gid = "%s-%s" % (sid, t)
-        groups.append('<section class="group" aria-labelledby="%s"><h3 id="%s">%s</h3>'
-                      '<ul class="entries">%s</ul></section>'
-                      % (gid, gid, esc(s["types"][t]), "\n".join(render_entry(e, app, internal) for e in items)))
-    return '<article class="release" aria-labelledby="%s">%s%s</article>' % (sid, head, "\n".join(groups))
+        body.append('<section class="group" aria-labelledby="%s"><h3 id="%s">%s</h3><ul class="items">%s</ul>'
+                    '</section>' % (gid, gid, esc(s["types"][t]),
+                                    "\n".join(render_item(e, app, internal) for e in items)))
+    return ('<article class="release" id="%s" aria-labelledby="%s-title">%s<div class="release-body">%s</div>'
+            '</article>' % (sid, sid, rail, "\n".join(b for b in body if b)))
 
 
 def archive_nav(app, pages, current):
@@ -236,19 +317,18 @@ def render_html(app, releases, internal, page="index.html", pages=None):
     name = app["name"]
     logo = ('<img src="%s" alt="%s">' % (esc(theme["logo_url"]), esc(s["logo_alt"].format(name=name)))
             if theme.get("logo_url") else "")
-    used_types = [t for t in ENTRY_TYPES if any(e.get("type") == t for r in shown for e in r.get("entries", []))]
-    type_filters = "".join('<label><input type="checkbox" name="type" value="%s" checked> %s</label>'
-                           % (t, esc(s["types"][t])) for t in used_types)
     audience_options = "".join('<option value="%s">%s</option>' % (esc(a["id"]), esc(a.get("label", a["id"])))
                                for a in app.get("audiences", []))
     feeds = audience_feeds(app)
     feed_links = "".join('<link rel="alternate" type="application/atom+xml" title="%s (%s)" href="%s">\n'
                          % (esc(s["title"].format(name=name)), esc(lbl), fname) for _, fname, lbl in feeds)
-    feed_list = (" · %s %s" % (esc(s["audience_feeds"]), ", ".join(
-        '<a href="%s">%s</a>' % (fname, esc(lbl)) for _, fname, lbl in feeds))) if feeds else ""
+    feed_list = ('<details class="feeds"><summary>%s</summary><ul>%s</ul></details>' % (
+        esc(s["audience_feeds"]), "".join('<li><a href="%s">%s</a></li>' % (fname, esc(lbl))
+                                          for _, fname, lbl in feeds))) if feeds else ""
     body = "\n".join(render_release(r, app, internal) for r in shown) or "<p>%s</p>" % esc(s["no_releases"])
-    title = s["title"].format(name=name) + (s["internal_suffix"] if internal else "")
-    page_title = title + (" – %s" % label if label else "")
+    suffix = (s["internal_suffix"] if internal else "") + (" – %s" % label if label else "")
+    page_title = s["title"].format(name=name) + suffix
+    heading = s["heading"].format(name=name) + suffix
     description = app.get("description") or s["intro"].format(name=name)
     updated = ""
     if releases:
@@ -258,7 +338,7 @@ def render_html(app, releases, internal, page="index.html", pages=None):
     repl = {
         "lang": esc(app.get("lang", "en")),
         "page_title": esc(page_title),
-        "heading": esc(page_title),
+        "heading": esc(heading),
         "meta_description": esc(description),
         "meta_tags": meta_tags(app, esc(page_title), esc(description), page, internal),
         "feed_links": feed_links,
@@ -269,7 +349,6 @@ def render_html(app, releases, internal, page="index.html", pages=None):
         "logo": logo,
         "internal_banner": ('<p class="banner" role="note"><strong>%s</strong></p>' % esc(s["internal_banner"])
                             if internal else ""),
-        "type_filters": type_filters,
         "audience_options": audience_options,
         "audience_feed_list": feed_list,
         "releases": body,
@@ -303,6 +382,8 @@ def render_markdown(app, releases):
         yank = " [YANKED]" if r.get("yanked") else ""
         lines.append("## [%s] - %s%s" % (r["version"], r.get("date", ""), yank))
         lines.append("")
+        if r.get("title"):
+            lines += ["**%s**" % md_escape(r["title"]), ""]
         if r.get("summary"):
             lines += [md_escape(r["summary"]), ""]
         for t in ENTRY_TYPES:
@@ -365,9 +446,10 @@ def render_atom(app, releases, audience=None):
     pages = page_of(app, releases)
     for r, entries in items:
         link = release_url(app, releases, r["version"], pages) if base else ""
-        entry_title = r["version"] + (" – " + r["summary"] if r.get("summary") else "")
+        headline = r.get("title") or r.get("summary")
+        entry_title = r["version"] + (" – " + headline if headline else "")
         content = []
-        for t in ENTRY_TYPES:
+        for t in SECTION_ORDER:
             group = [e for e in entries if e.get("type") == t]
             if not group:
                 continue
@@ -461,11 +543,23 @@ def render_app(app, root, internal, quiet=False):
     md = app.get("changelog_md", True)
     if md:
         md_path = os.path.join(root, md if isinstance(md, str) else os.path.join(app.get("path", "."), "CHANGELOG.md"))
-        problem = changelog_conflict(md_path, releases)
-        if problem:
-            print("shiplog: not writing %s: %s" % (os.path.normpath(md_path), problem), file=sys.stderr)
+        if os.path.exists(md_path) and not is_generated(md_path) and app.get("changelog_md_mode") != "regenerate":
+            # A hand-written changelog: add new releases in its own format, never rewrite it.
+            with open(md_path, encoding="utf-8", newline="") as f:
+                text = f.read()
+            updated, added, notes = changelog_md.insert_releases(text, releases)
+            for n in notes:
+                print("shiplog: %s: %s" % (os.path.normpath(md_path), n), file=sys.stderr)
+            if added:
+                with open(md_path, "w", encoding="utf-8", newline="") as f:
+                    f.write(updated)
+                written.append(os.path.normpath(md_path) + " (added %s)" % ", ".join(added))
         else:
-            written.append(write(md_path, render_markdown(app, releases)))
+            problem = changelog_conflict(md_path, releases)
+            if problem:
+                print("shiplog: not writing %s: %s" % (os.path.normpath(md_path), problem), file=sys.stderr)
+            else:
+                written.append(write(md_path, render_markdown(app, releases)))
     if not quiet:
         print("== %s ==" % app["name"])
         for p in written:

@@ -83,7 +83,7 @@ BAD = {
     "bad version": mutate(lambda r: r.update(version="v1.1")),
     "bad date": mutate(lambda r: r.update(date="28/09/2026")),
     "no entries": mutate(lambda r: r.update(entries=[])),
-    "long summary": mutate(lambda r: r.update(summary="x" * 121)),
+    "long summary": mutate(lambda r: r.update(summary="x" * 281)),
     "bad type": mutate(lambda r: r["entries"][0].update(type="feature")),
     "no audiences": mutate(lambda r: r["entries"][0].pop("audiences")),
     "empty audiences": mutate(lambda r: r["entries"][0].update(audiences=[])),

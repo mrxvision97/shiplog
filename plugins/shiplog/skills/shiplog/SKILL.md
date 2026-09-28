@@ -28,7 +28,7 @@ Look for `.shiplog.json` at the repo root.
 
 - **Found:** read it. Note the apps, their `path`, `tag_prefix`, `releases_dir`, and the defined audiences.
 - **Not found:** run `shiplog init`. It detects the name and description (package.json, pyproject.toml, Cargo.toml, go.mod, git remote) and the tag prefix from existing version tags (`v1.2.3`, `1.2.3`, `release-1.2.3`). Pass `--name`, `--base-url` or `--tag-prefix` to override. Show the user what was detected, then tailor the `audiences` list with them. Audiences are the groups entries target, e.g. admins, end users, API consumers, support. Ask who they are rather than guessing: a wrong audience list makes every entry's impact wrong.
-- **Existing hand-written CHANGELOG.md:** Shiplog never overwrites it. Offer `shiplog import` so its history becomes release files; after that Shiplog generates CHANGELOG.md, keeping the old entries.
+- **Existing hand-written CHANGELOG.md:** Shiplog keeps it. Each new release is added above the newest one in the file's own format (headings, dates, section names, bullets, PR links), and existing lines are never changed. Read its latest entries so your wording matches its tone too. `shiplog import` is only needed to show the old history on the changelog page.
 - **Monorepo:** one `apps[]` item per app, each with its own `path`, `tag_prefix` and `releases_dir`. See `references/config.md`.
 
 If the user wants CI enforcement, run `shiplog init --with-ci`. It vendors the scripts into `.shiplog/scripts/` and adds a GitHub Actions workflow, so CI never depends on Claude.
@@ -71,6 +71,7 @@ Turn changes into **user-facing entries**. Grouping several changes into one ent
 - **`audiences`** use ids from the config, or `everyone`.
 - **`action_required` / `action`:** if readers must do something, say exactly what and by when. Breaking changes always require an action. Deprecations name the replacement and a deadline.
 - **`internal_notes`** is for support: talking points, known issues, rollback, flag names.
+- **The release reads like a product post:** a `title` headline led by the biggest change, a one or two sentence `summary`, and 1 to 3 entries marked `"highlight": true` (optionally with an `image` and alt text). Everything else stays short. See "The release" in the writing guide.
 
 **Don't invent impact.** If you can't tell who is affected or whether action is needed, ask with specific questions ("Does the new rate limit apply to free-tier keys too?"). A confidently wrong "no action required" is the most damaging mistake this tool can make.
 
@@ -85,7 +86,8 @@ Write `<releases_dir>/<version>.json`. Format: `references/schema.md`. Minimal e
   "$schema": "https://raw.githubusercontent.com/mrxvision97/shiplog/main/plugins/shiplog/skills/shiplog/schema/release.schema.json",
   "version": "2.4.0",
   "date": "2026-09-28",
-  "summary": "Bulk export and faster search",
+  "title": "Bulk export and faster search",
+  "summary": "Export whole reports in one step, and find records in large workspaces in about a second.",
   "entries": [
     {
       "type": "added",
@@ -93,6 +95,7 @@ Write `<releases_dir>/<version>.json`. Format: `references/schema.md`. Minimal e
       "description": "You can now export large reports as CSV in one step from the Reports page. Previously exports were limited to 5,000 rows.",
       "audiences": ["admins"],
       "action_required": false,
+      "highlight": true,
       "refs": ["#412"]
     }
   ]

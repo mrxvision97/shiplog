@@ -23,10 +23,11 @@ from _common import (ENTRY_TYPES, NOT_TICKETS, app_for_tag, audience_ids, find_r
 TITLE_MAX = 100
 DESC_MIN = 20
 DESC_MAX = 800
-ALLOWED_RELEASE_KEYS = {"$schema", "version", "date", "summary", "entries", "yanked", "_file"}
+SUMMARY_MAX = 280  # the intro under the release headline
+ALLOWED_RELEASE_KEYS = {"$schema", "version", "date", "title", "summary", "image", "entries", "yanked", "_file"}
 ALLOWED_ENTRY_KEYS = {"type", "title", "description", "audiences", "action_required", "action",
                       "action_deadline", "breaking", "links", "internal_notes", "refs", "media",
-                      "_needs_review"}
+                      "highlight", "image", "_needs_review"}
 
 TICKET_RE = re.compile(r"\b([A-Z][A-Z0-9]+)-\d+\b")
 # "#1 priority" is not a PR; "(#12)", "PR #12", "fixes #12" and "#1234" are.
@@ -44,6 +45,16 @@ JARGON_PATTERNS = [
 ]
 REPLACEMENT_RE = re.compile(r"\b(instead|replace[sd]?|replacement|use|switch(?:ing)? to|migrat\w*|"
                             r"move to|upgrade to|successor|alternative)\b", re.I)
+
+
+def check_image(img, label, errs):
+    """An image needs an http(s) url and alt text (what it shows, for screen readers)."""
+    if img is None:
+        return
+    if not isinstance(img, dict) or not isinstance(img.get("url"), str) or not re.match(r"^https?://", img["url"]):
+        errs.append("%s: image needs an http(s) 'url'" % label)
+    elif not isinstance(img.get("alt"), str) or len(img["alt"].strip()) < 3:
+        errs.append("%s: image needs 'alt' text describing what it shows" % label)
 
 
 def valid_date(s):
@@ -176,6 +187,9 @@ def validate_entry(e, idx, app, errs, warns):
         said = desc + " " + (action if isinstance(action, str) else "")
         if not links and not REPLACEMENT_RE.search(said):
             warns.append("%s: deprecation should name the replacement (\"use X instead\") or add a link" % p)
+    if "highlight" in e and not isinstance(e["highlight"], bool):
+        errs.append("%s: highlight must be true or false" % p)
+    check_image(e.get("image"), p, errs)
     v = e.get("refs")
     if v is not None and not (isinstance(v, list) and all(isinstance(x, str) for x in v)):
         errs.append("%s: refs must be a list of strings" % p)
@@ -202,8 +216,12 @@ def validate_release(r, app, newest=False, today=None):
     elif datetime.date.fromisoformat(d) > today + datetime.timedelta(days=60):
         warns.append("date %s is far in the future" % d)
     s = r.get("summary")
-    if s is not None and (not isinstance(s, str) or len(s) > 120):
-        errs.append("summary must be a string under 120 chars")
+    if s is not None and (not isinstance(s, str) or len(s) > SUMMARY_MAX):
+        errs.append("summary must be a string under %d chars" % SUMMARY_MAX)
+    t = r.get("title")
+    if t is not None and (not isinstance(t, str) or not t.strip() or len(t) > 100):
+        errs.append("title must be a headline under 100 chars")
+    check_image(r.get("image"), "release", errs)
     entries = r.get("entries")
     if not isinstance(entries, list) or not entries:
         errs.append("entries must be a non-empty list")

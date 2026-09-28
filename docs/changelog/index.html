@@ -19,198 +19,185 @@
 <link rel="alternate" type="application/json" title="Shiplog changelog (JSON)" href="changelog.json">
 <style>
 :root {
-  --bg: #ffffff; --fg: #1a1a1f; --muted: #52525b; --border: #e4e4e7; --surface: #f7f7f8;
+  --bg: #ffffff; --fg: #111113; --muted: #5d5f66; --faint: #686a71; --border: #e7e7ea; --surface: #f6f6f7;
   --accent: #4f46e5; --accent-fg: #ffffff;
-  --warn-bg: #fff4e5; --warn-fg: #7a3e00; --warn-border: #f0b060;
-  --danger-bg: #fdecec; --danger-fg: #8a1c1c; --danger-border: #eaa0a0;
+  --warn-bg: #fff6e6; --warn-fg: #7a3e00; --warn-border: #f2c27a;
+  --danger-bg: #fdeeee; --danger-fg: #8a1c1c; --danger-border: #eeb0b0;
   --focus: #1d4ed8;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #111114; --fg: #ececf1; --muted: #a1a1aa; --border: #2e2e35; --surface: #1a1a1f;
-    --warn-bg: #3a2708; --warn-fg: #ffd9a8; --warn-border: #8a5a14;
-    --danger-bg: #3b1212; --danger-fg: #ffc9c9; --danger-border: #8a2e2e;
+    --bg: #0e0f11; --fg: #ececef; --muted: #a2a4ab; --faint: #85878e; --border: #25272b; --surface: #16171a;
+    --warn-bg: #2e2208; --warn-fg: #ffd9a3; --warn-border: #7a5413;
+    --danger-bg: #331313; --danger-fg: #ffc9c9; --danger-border: #7d2a2a;
     --focus: #93b4ff;
   }
 }
 *, *::before, *::after { box-sizing: border-box; }
-html { font-size: 100%; }
+html { font-size: 100%; -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--bg); color: var(--fg);
-  font: 1rem/1.6 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-a { color: inherit; text-decoration-color: var(--accent); text-underline-offset: 2px; text-decoration-thickness: 2px; }
-a:hover { text-decoration-thickness: 3px; }
-:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
+  font: 1rem/1.65 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration-color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1.5px; }
+a:hover { text-decoration-thickness: 2.5px; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 3px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .skip { position: absolute; left: -9999px; top: 0; background: var(--fg); color: var(--bg); padding: .5rem 1rem; z-index: 10; }
 .skip:focus { left: 1rem; top: 1rem; }
-.wrap { max-width: 46rem; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
-header.site { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; border-bottom: 1px solid var(--border); padding-bottom: 1.25rem; margin-bottom: 1.5rem; }
-header.site img { height: 2rem; width: auto; }
-header.site h1 { font-size: 1.6rem; line-height: 1.2; margin: 0; }
-header.site p { margin: .25rem 0 0; color: var(--muted); width: 100%; }
-.subscribe { font-size: .95rem; color: var(--muted); }
-.banner { background: var(--danger-bg); color: var(--danger-fg); border: 1px solid var(--danger-border); padding: .75rem 1rem; border-radius: .5rem; margin-bottom: 1.5rem; }
-form.filters { background: var(--surface); border: 1px solid var(--border); border-radius: .75rem; padding: 1rem; margin-bottom: 2rem; }
-form.filters fieldset { border: 0; margin: 0 0 .75rem; padding: 0; }
-form.filters legend { font-weight: 600; margin-bottom: .35rem; padding: 0; }
-.chips { display: flex; flex-wrap: wrap; gap: .5rem 1rem; }
-.chips label, .inline { display: inline-flex; align-items: center; gap: .35rem; cursor: pointer; }
-input[type=checkbox] { width: 1.1rem; height: 1.1rem; accent-color: var(--accent); }
-select, input[type=search] { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--muted); border-radius: .4rem; padding: .35rem .5rem; min-height: 2.5rem; }
-.row { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; align-items: center; }
-.row label.stack { display: flex; flex-direction: column; gap: .2rem; font-weight: 600; }
-#result-count { margin: .75rem 0 0; color: var(--muted); font-size: .95rem; }
-article.release { border-bottom: 1px solid var(--border); padding: 0 0 2rem; margin: 0 0 2rem; }
-article.release > header h2 { font-size: 1.4rem; margin: 0; display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
-article.release > header h2 a { text-decoration: none; }
-article.release > header h2 a:hover { text-decoration: underline; }
-article.release time { color: var(--muted); font-size: 1rem; font-weight: 400; }
-.summary { margin: .35rem 0 0; font-size: 1.05rem; }
-.yanked { color: var(--danger-fg); font-weight: 600; }
-section.group h3 { font-size: 1rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 1.5rem 0 .5rem; }
-ul.entries { list-style: none; margin: 0; padding: 0; }
-li.entry { padding: .85rem 0; border-top: 1px solid var(--border); }
-li.entry:first-child { border-top: 0; }
-.entry h4 { font-size: 1.05rem; margin: 0 0 .25rem; }
-.entry p { margin: .25rem 0; }
-.badges { display: inline-flex; gap: .4rem; flex-wrap: wrap; margin-left: .25rem; vertical-align: middle; }
-.badge { font-size: .78rem; font-weight: 700; padding: .1rem .5rem; border-radius: 999px; border: 1px solid; white-space: nowrap; }
-.badge.breaking { background: var(--danger-bg); color: var(--danger-fg); border-color: var(--danger-border); }
+.wrap { max-width: 62rem; margin: 0 auto; padding: 3.5rem 1.25rem 5rem; }
+
+/* Header */
+header.site { padding-bottom: 2rem; }
+.brand { display: flex; align-items: center; gap: .6rem; margin: 0 0 1.25rem; font-weight: 600; color: var(--muted); }
+.brand img { height: 1.75rem; width: auto; }
+header.site h1 { font-size: clamp(2.2rem, 5vw, 3rem); line-height: 1.1; letter-spacing: -.025em; margin: 0; }
+.lede { font-size: 1.15rem; color: var(--muted); margin: .75rem 0 0; max-width: 40rem; }
+.subscribe { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin-top: 1.5rem; font-size: .95rem; }
+.btn { display: inline-flex; align-items: center; gap: .45rem; padding: .45rem .9rem; border-radius: 999px;
+  background: var(--fg); color: var(--bg); text-decoration: none; font-weight: 600; }
+.btn:hover { opacity: .88; }
+.btn svg { width: 1em; height: 1em; }
+details.feeds { position: relative; }
+details.feeds summary { cursor: pointer; color: var(--muted); }
+details.feeds ul { list-style: none; margin: .5rem 0 0; padding: .6rem .9rem; border: 1px solid var(--border); border-radius: .6rem; background: var(--bg); }
+details.feeds li { margin: .15rem 0; }
+.subscribe .plain { color: var(--muted); }
+.banner { background: var(--danger-bg); color: var(--danger-fg); border: 1px solid var(--danger-border); padding: .75rem 1rem; border-radius: .6rem; margin: 0 0 1.5rem; }
+
+/* Filter bar */
+form.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; padding: .75rem 0; margin-bottom: .5rem;
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); font-size: .95rem; }
+form.toolbar label.field { display: inline-flex; align-items: center; gap: .5rem; color: var(--muted); }
+select, input[type=search] { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: .5rem; padding: .35rem .6rem; min-height: 2.4rem; }
+select:hover, input[type=search]:hover { border-color: var(--muted); }
+input[type=search] { min-width: 12rem; flex: 1 1 12rem; max-width: 20rem; }
+.toggle { display: inline-flex; align-items: center; gap: .4rem; cursor: pointer; color: var(--muted); }
+input[type=checkbox] { width: 1.05rem; height: 1.05rem; accent-color: var(--accent); }
+#result-count { margin: 0 0 0 auto; color: var(--faint); font-size: .9rem; }
+
+/* Releases */
+article.release { display: grid; grid-template-columns: 1fr; gap: .75rem; padding: 3rem 0; border-bottom: 1px solid var(--border); }
+@media (min-width: 56rem) {
+  article.release { grid-template-columns: 10.5rem minmax(0, 1fr); gap: 3rem; }
+  .rail { position: sticky; top: 1.5rem; align-self: start; }
+}
+.rail { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .75rem; font-size: .92rem; }
+@media (min-width: 56rem) { .rail { flex-direction: column; gap: .35rem; } }
+.rail .date { color: var(--muted); text-decoration: none; }
+.rail .date:hover { color: var(--fg); text-decoration: underline; }
+.rail .version { font: 600 .8rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--muted);
+  border: 1px solid var(--border); border-radius: 999px; padding: .3rem .55rem; }
+.release-body { max-width: 42rem; min-width: 0; }
+.release-body > h2 { font-size: clamp(1.5rem, 3vw, 1.9rem); line-height: 1.2; letter-spacing: -.02em; margin: 0; }
+.release-body > h2 a { text-decoration: none; }
+.release-body > h2 a:hover { text-decoration: underline; }
+.intro { font-size: 1.08rem; color: var(--muted); margin: .6rem 0 0; }
+figure.media { margin: 1.5rem 0 0; }
+figure.media img { display: block; width: 100%; height: auto; border-radius: .75rem; border: 1px solid var(--border); }
+
+.callout { margin: 1.75rem 0 0; padding: 1rem 1.25rem; border-radius: .75rem; background: var(--warn-bg); color: var(--warn-fg); border: 1px solid var(--warn-border); }
+.callout h3 { font-size: 1rem; margin: 0 0 .5rem; }
+.callout ul { margin: 0; padding: 0; list-style: none; }
+.callout li { padding: .6rem 0; border-top: 1px solid var(--warn-border); }
+.callout li:first-child { border-top: 0; padding-top: 0; }
+.callout p { margin: .2rem 0; }
+.callout .deadline { font-weight: 600; }
+.callout .tag { border-color: var(--warn-border); color: var(--warn-fg); }
+
+section.highlight { margin-top: 2.25rem; }
+section.highlight h3 { font-size: 1.25rem; line-height: 1.3; letter-spacing: -.01em; margin: 0 0 .4rem; }
+section.highlight p { margin: .5rem 0; }
+section.group { margin-top: 2.25rem; }
+section.group h3 { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--faint); margin: 0 0 .5rem; }
+ul.items { list-style: none; margin: 0; padding: 0; }
+ul.items li { position: relative; padding: .55rem 0 .55rem 1.1rem; }
+ul.items li::before { content: ""; position: absolute; left: .1rem; top: 1.15rem; width: .35rem; height: .35rem; border-radius: 50%; background: var(--faint); }
+.item-title { margin: 0; }
+.item-desc p { margin: .15rem 0 0; color: var(--muted); }
+.links { display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; margin: .5rem 0 0; font-weight: 600; font-size: .95rem; }
+.tags { display: flex; flex-wrap: wrap; gap: .35rem; margin: .45rem 0 0; }
+.tag { font-size: .78rem; line-height: 1.4; padding: .05rem .5rem; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+.badge { display: inline-block; vertical-align: .1em; font-size: .72rem; font-weight: 700; line-height: 1.5; padding: 0 .45rem; border-radius: 999px; border: 1px solid; white-space: nowrap; letter-spacing: .01em; }
+.badge.breaking, .badge.withdrawn { background: var(--danger-bg); color: var(--danger-fg); border-color: var(--danger-border); }
 .badge.action { background: var(--warn-bg); color: var(--warn-fg); border-color: var(--warn-border); }
-.meta { color: var(--muted); font-size: .95rem; }
-.action-box { background: var(--warn-bg); color: var(--warn-fg); border-left: 4px solid var(--warn-border); padding: .6rem .85rem; border-radius: .35rem; margin: .5rem 0; }
-.action-box strong { display: block; }
-.links { display: flex; gap: 1rem; flex-wrap: wrap; font-size: .95rem; margin-top: .35rem; }
-details.internal { margin-top: .5rem; background: var(--surface); border: 1px dashed var(--muted); border-radius: .4rem; padding: .5rem .75rem; font-size: .95rem; }
+details.internal { margin-top: .5rem; background: var(--surface); border: 1px dashed var(--muted); border-radius: .5rem; padding: .5rem .75rem; font-size: .93rem; }
 details.internal summary { cursor: pointer; font-weight: 600; }
-nav.archive { margin: 0 0 2rem; }
-nav.archive h2 { font-size: 1.1rem; margin: 0 0 .5rem; }
-nav.archive ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem 1rem; }
-nav.archive a[aria-current] { font-weight: 700; text-decoration: none; }
-footer.site { color: var(--muted); font-size: .9rem; }
+
+nav.archive { padding: 2.5rem 0 0; }
+nav.archive h2 { font-size: 1rem; margin: 0 0 .6rem; }
+nav.archive ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem; }
+nav.archive a { display: inline-block; padding: .3rem .8rem; border: 1px solid var(--border); border-radius: 999px; text-decoration: none; }
+nav.archive a:hover { border-color: var(--muted); }
+nav.archive a[aria-current] { background: var(--fg); color: var(--bg); border-color: var(--fg); font-weight: 600; }
+footer.site { color: var(--faint); font-size: .9rem; padding-top: 2.5rem; }
 [hidden] { display: none !important; }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
-@media print { form.filters, .skip, .subscribe, nav.archive { display: none; } }
+@media print { form.toolbar, .skip, .subscribe, nav.archive { display: none; } .rail { position: static; } }
 </style>
 </head>
 <body>
 <a class="skip" href="#main">Skip to changelog</a>
 <div class="wrap">
 <header class="site">
-  
-  <h1>Shiplog changelog</h1>
-  <p>Changes to Shiplog, the Claude Code skill for plain-language, impact-aware changelogs.</p>
-  <p class="subscribe">Follow updates: <a href="feed.xml">Atom/RSS feed</a> · <a href="changelog.json">JSON</a> · Feeds by audience: <a href="feed-skill-users.xml">People using the skill in Claude Code</a>, <a href="feed-ci-maintainers.xml">Maintainers of the Shiplog CI workflow</a>, <a href="feed-contributors.xml">Shiplog contributors</a></p>
+  <p class="brand"><span>Shiplog</span></p>
+  <h1>Changelog</h1>
+  <p class="lede">Changes to Shiplog, the Claude Code skill for plain-language, impact-aware changelogs.</p>
+  <div class="subscribe">
+    <a class="btn" href="feed.xml"><svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><circle cx="3" cy="13" r="2"/><path d="M1 6.5a8.5 8.5 0 0 1 8.5 8.5h-2A6.5 6.5 0 0 0 1 8.5z"/><path d="M1 1.5A13.5 13.5 0 0 1 14.5 15h-2A11.5 11.5 0 0 0 1 3.5z"/></svg>Subscribe</a>
+    <details class="feeds"><summary>Feeds by audience</summary><ul><li><a href="feed-skill-users.xml">People using the skill in Claude Code</a></li><li><a href="feed-ci-maintainers.xml">Maintainers of the Shiplog CI workflow</a></li><li><a href="feed-contributors.xml">Shiplog contributors</a></li></ul></details>
+    <a class="plain" href="changelog.json">JSON</a>
+  </div>
 </header>
 
-<form class="filters" id="filters" hidden aria-labelledby="filters-heading">
-  <h2 id="filters-heading" style="font-size:1.1rem;margin:0 0 .75rem">Filter changes</h2>
-  <fieldset>
-    <legend>Type of change</legend>
-    <div class="chips"><label><input type="checkbox" name="type" value="added" checked> Added</label><label><input type="checkbox" name="type" value="changed" checked> Changed</label><label><input type="checkbox" name="type" value="fixed" checked> Fixed</label></div>
-  </fieldset>
-  <div class="row">
-    <label class="stack" for="f-audience">Affects
-      <select id="f-audience" name="audience">
-        <option value="">Anyone</option>
-        <option value="skill-users">People using the skill in Claude Code</option><option value="ci-maintainers">Maintainers of the Shiplog CI workflow</option><option value="contributors">Shiplog contributors</option>
-      </select>
-    </label>
-    <label class="stack" for="f-search">Search
-      <input type="search" id="f-search" name="q" autocomplete="off">
-    </label>
-    <label class="inline"><input type="checkbox" id="f-action" name="action"> Action required only</label>
-  </div>
+<form class="toolbar" id="filters" hidden aria-label="Filter changes">
+  <label class="field" for="f-audience">Show changes for
+    <select id="f-audience" name="audience">
+      <option value="">Everyone</option>
+      <option value="skill-users">People using the skill in Claude Code</option><option value="ci-maintainers">Maintainers of the Shiplog CI workflow</option><option value="contributors">Shiplog contributors</option>
+    </select>
+  </label>
+  <label class="sr-only" for="f-search">Search</label>
+  <input type="search" id="f-search" name="q" placeholder="Search" autocomplete="off">
+  <label class="toggle"><input type="checkbox" id="f-action" name="action"> Action required only</label>
   <p id="result-count" role="status" aria-live="polite" data-all="Showing all {n} changes." data-some="Showing {shown} of {total} changes."></p>
 </form>
 <main id="main">
-<article class="release" aria-labelledby="v0-2-0"><header><h2 id="v0-2-0"><a href="#v0-2-0">0.2.0</a> <time datetime="2026-09-28">September 28, 2026</time></h2><p class="summary">Slack announcements, faster drafting, archive pages and audience feeds</p></header><section class="group" aria-labelledby="v0-2-0-added"><h3 id="v0-2-0-added">Added</h3><ul class="entries"><li class="entry" data-type="added" data-audiences="skill-users ci-maintainers" data-action="false">
-<h4>Announce releases in Slack </h4>
-<p>After a release is published, Shiplog can post it to one or more Slack channels. Each channel only gets the changes for its audiences, and action-required changes come first with their deadline. You see a preview of every message and nothing is sent until you confirm. Webhook URLs and tokens stay in environment variables or CI secrets, never in the repository.</p>
-<p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code, Maintainers of the Shiplog CI workflow</p>
-<p class="links"><a href="https://github.com/mrxvision97/shiplog/blob/main/plugins/shiplog/skills/shiplog/references/slack.md">Slack setup guide</a></p>
-</li>
-<li class="entry" data-type="added" data-audiences="skill-users" data-action="false">
-<h4>Use Shiplog in any repository </h4>
-<p>Install the skill into a repository with one command and commit it, so everyone on the team gets it in Claude Code. Setup detects the app name from package.json, pyproject.toml, Cargo.toml, go.mod or the git remote, and the tag style from existing tags. Commands work from any folder in the repository.</p>
-<p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code</p>
-</li>
-<li class="entry" data-type="added" data-audiences="skill-users" data-action="false">
-<h4>Import an existing CHANGELOG.md </h4>
-<p>Ask Claude to import your Keep a Changelog file and each version becomes a Shiplog release. Old entries don&#x27;t say who is affected, so every imported entry is marked for review, and the validator lists them until you confirm the impact.</p>
-<p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code</p>
-</li>
-<li class="entry" data-type="added" data-audiences="skill-users" data-action="false">
-<h4>A feed for each audience </h4>
-<p>Besides the main feed, each audience now gets its own Atom feed with only the changes that affect it, plus changes for everyone. The changelog page links to all of them, so admins can subscribe to admin changes only.</p>
-<p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code</p>
-</li>
-<li class="entry" data-type="added" data-audiences="skill-users" data-action="false">
-<h4>Translate the changelog page and get link previews </h4>
-<p>Every label on the page, including month names and the date format, can be translated in the config. Pages now include Open Graph and canonical tags, so links shared in chat or social apps show a proper preview.</p>
-<p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code</p>
-</li>
-<li class="entry" data-type="added" data-audiences="skill-users contributors" data-action="false">
-<h4>Autocomplete for release files in your editor </h4>
-<p>Release files and the config now point to a JSON Schema, so editors like VS Code suggest field names and flag mistakes while you type.</p>
-<p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code, Shiplog contributors</p>
-</li></ul></section>
-<section class="group" aria-labelledby="v0-2-0-changed"><h3 id="v0-2-0-changed">Changed</h3><ul class="entries"><li class="entry" data-type="changed" data-audiences="skill-users" data-action="false">
-<h4>Releases are drafted faster, with fewer questions </h4>
-<p>Claude now reads a compact one-line-per-change summary instead of every commit in full, and asks all its questions about impact in one message. If you already gave the version or impact details, it doesn&#x27;t ask again. When the GitHub CLI is available, pull request titles, descriptions and labels are fetched in a single request.</p>
-<p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code</p>
-</li>
-<li class="entry" data-type="changed" data-audiences="skill-users" data-action="false">
-<h4>Changes are grouped by pull request </h4>
-<p>Repositories that use merge commits or squash merges now get one suggested entry per pull request, titled with the pull request&#x27;s title, instead of one per commit. Previously the pull request titles in merge commits were skipped.</p>
-<p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code</p>
-</li>
-<li class="entry" data-type="changed" data-audiences="skill-users" data-action="false">
-<h4>Older releases move to yearly archive pages </h4>
-<p>The main changelog page now shows the latest 20 releases. Older releases are on one page per year, linked at the bottom of every page. Feeds and CHANGELOG.md link to the right page. Links to an older release on the main page now land on the main page without jumping to it; set page_size to 0 in the config to keep everything on one page.</p>
-<p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code</p>
-</li>
-<li class="entry" data-type="changed" data-audiences="skill-users ci-maintainers" data-action="true">
-<h4>Python 3.10 or newer <span class="badges"><span class="badge action">Action required</span></span></h4>
-<p>Shiplog is now tested on Python 3.10 through 3.13. Python 3.8 and 3.9 are no longer supported.</p>
-<p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code, Maintainers of the Shiplog CI workflow</p>
-<div class="action-box"><strong>What you need to do</strong><p>If you run Shiplog or its CI workflow on Python 3.8 or 3.9, switch to Python 3.10 or newer.</p></div>
-</li>
-<li class="entry" data-type="changed" data-audiences="skill-users ci-maintainers" data-action="false">
-<h4>More helpful validation messages </h4>
-<p>Validation messages now name the file and the entry title, so problems are easy to find. The validator also warns when the newest release has a deadline that has passed, and when a deprecation doesn&#x27;t say what to use instead.</p>
-<p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code, Maintainers of the Shiplog CI workflow</p>
-</li>
-<li class="entry" data-type="changed" data-audiences="ci-maintainers" data-action="false">
-<h4>CI workflow template reads full history and can post to Slack </h4>
-<p>New workflows fetch the full git history and tags, and include an optional step that announces tagged releases in Slack. Existing workflows keep working. To get the new template and scripts, run the setup again with the force option.</p>
-<p class="meta"><span>Who&#x27;s affected:</span> Maintainers of the Shiplog CI workflow</p>
-</li></ul></section>
-<section class="group" aria-labelledby="v0-2-0-fixed"><h3 id="v0-2-0-fixed">Fixed</h3><ul class="entries"><li class="entry" data-type="fixed" data-audiences="skill-users ci-maintainers" data-action="false">
-<h4>The changelog page no longer changes on every render </h4>
-<p>Pages used to include the date they were built, so rendering unchanged releases on another day produced a diff. The footer now shows the latest release date, and re-rendering gives identical files.</p>
-<p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code, Maintainers of the Shiplog CI workflow</p>
-</li>
-<li class="entry" data-type="fixed" data-audiences="skill-users ci-maintainers" data-action="false">
-<h4>Better version suggestions </h4>
-<p>After a pre-release such as 1.2.0-beta.1, the suggested version is now 1.2.0 instead of 1.2.1 or 1.3.0. First releases are suggested as 0.1.0, tags on other branches are ignored, and shallow CI checkouts get a clear message instead of a wrong range.</p>
-<p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code, Maintainers of the Shiplog CI workflow</p>
-</li>
-<li class="entry" data-type="fixed" data-audiences="skill-users" data-action="false">
-<h4>Fewer false warnings about jargon </h4>
-<p>Phrases like &quot;our #1 priority&quot;, product names that contain words such as Hotfix, and standards like UTF-8 or ISO-8601 no longer trigger warnings. You can also list accepted terms in the config.</p>
-<p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code</p>
-</li>
-<li class="entry" data-type="fixed" data-audiences="skill-users" data-action="false">
-<h4>Your hand-written CHANGELOG.md is never overwritten </h4>
-<p>Shiplog used to replace an existing CHANGELOG.md the first time it rendered. Now it leaves a hand-written file alone and offers to import it; once imported, the old entries carry over into the generated file.</p>
-<p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code</p>
-</li>
-<li class="entry" data-type="fixed" data-audiences="skill-users" data-action="false">
-<h4>First releases in repositories without tags </h4>
-<p>Without version tags, Shiplog now asks where the release starts instead of summarizing the whole history, uses the version in your package manifest as the starting point, and warns when you&#x27;re on a feature branch rather than the main branch.</p>
-<p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code</p>
-</li></ul></section></article>
+<article class="release" id="v0-3-0" aria-labelledby="v0-3-0-title"><div class="rail"><a class="date" href="#v0-3-0"><time datetime="2026-09-28">September 28, 2026</time></a><span class="version">0.3.0</span></div><div class="release-body"><h2 id="v0-3-0-title"><a href="#v0-3-0">A changelog page like the best product teams publish</a></h2>
+<p class="intro">The page now reads like Linear&#x27;s or Raycast&#x27;s changelog, and Shiplog adds new releases to your existing CHANGELOG.md in its own format.</p>
+<section class="entry highlight" data-type="changed" data-audiences="skill-users" data-action="false" aria-labelledby="v0-3-0-h1">
+<h3 id="v0-3-0-h1">A redesigned changelog page</h3>
+<p>Each release now has a headline, a short intro and an optional hero image, with the date and version in a column beside it. Anything readers must do is collected in one Action required box at the top. The biggest changes get their own section with a heading, text, screenshot and links, and everything else is listed compactly under New, Improvements and Fixes. Audience labels show who a change is for.</p>
+<p class="links"><a href="https://github.com/mrxvision97/shiplog/blob/main/plugins/shiplog/skills/shiplog/references/schema.md">How a release is shown <span aria-hidden="true">→</span></a></p>
+<p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span></p>
+</section>
+<section class="entry highlight" data-type="added" data-audiences="skill-users" data-action="false" aria-labelledby="v0-3-0-h2">
+<h3 id="v0-3-0-h2">New releases added to your existing CHANGELOG.md</h3>
+<p>If your repository already has a hand-written CHANGELOG.md, Shiplog now adds each new release above the newest one, in the same format: the same headings, date style, section names, bullets and pull request links. It works with Keep a Changelog, conventional-changelog and custom formats. Existing entries are never changed, and a release is never added twice.</p>
+<p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span></p>
+</section>
+<section class="group" aria-labelledby="v0-3-0-added"><h3 id="v0-3-0-added">New</h3><ul class="items"><li class="entry" data-type="added" data-audiences="skill-users contributors" data-action="false"><p class="item-title"><strong>Headlines, highlights and images in release files</strong></p><div class="item-desc"><p>Release files can now have a title headline, a longer intro, a hero image, and entries marked as highlights with their own screenshot. All are optional; existing release files keep working, and new features are highlighted automatically.</p></div><p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span><span class="tag">Shiplog contributors</span></p></li></ul></section>
+<section class="group" aria-labelledby="v0-3-0-changed"><h3 id="v0-3-0-changed">Improvements</h3><ul class="items"><li class="entry" data-type="changed" data-audiences="skill-users" data-action="false"><p class="item-title"><strong>A simpler filter bar</strong></p><div class="item-desc"><p>The filter box is now a single bar: choose an audience, show only changes that need action, or search.</p></div><p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span></p></li></ul></section>
+<section class="group" aria-labelledby="v0-3-0-fixed"><h3 id="v0-3-0-fixed">Fixes</h3><ul class="items"><li class="entry" data-type="fixed" data-audiences="skill-users" data-action="false"><p class="item-title"><strong>Stronger contrast for secondary text</strong></p><div class="item-desc"><p>Section labels and counts on the changelog page now meet WCAG AA contrast in light mode.</p></div><p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span></p></li></ul></section></div></article>
+<article class="release" id="v0-2-0" aria-labelledby="v0-2-0-title"><div class="rail"><a class="date" href="#v0-2-0"><time datetime="2026-09-28">September 28, 2026</time></a><span class="version">0.2.0</span></div><div class="release-body"><h2 id="v0-2-0-title"><a href="#v0-2-0">Slack announcements, faster drafting, archive pages and audience feeds</a></h2>
+<aside class="callout" aria-labelledby="v0-2-0-action"><h3 id="v0-2-0-action">Action required</h3><ul><li class="action-item" data-audiences="skill-users ci-maintainers"><p class="item-title"><strong>Python 3.10 or newer</strong></p><p>If you run Shiplog or its CI workflow on Python 3.8 or 3.9, switch to Python 3.10 or newer.</p><p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span><span class="tag">Maintainers of the Shiplog CI workflow</span></p></li></ul></aside>
+<section class="group" aria-labelledby="v0-2-0-added"><h3 id="v0-2-0-added">New</h3><ul class="items"><li class="entry" data-type="added" data-audiences="skill-users ci-maintainers" data-action="false"><p class="item-title"><strong>Announce releases in Slack</strong></p><div class="item-desc"><p>After a release is published, Shiplog can post it to one or more Slack channels. Each channel only gets the changes for its audiences, and action-required changes come first with their deadline. You see a preview of every message and nothing is sent until you confirm. Webhook URLs and tokens stay in environment variables or CI secrets, never in the repository.</p></div><p class="links"><a href="https://github.com/mrxvision97/shiplog/blob/main/plugins/shiplog/skills/shiplog/references/slack.md">Slack setup guide</a></p><p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span><span class="tag">Maintainers of the Shiplog CI workflow</span></p></li>
+<li class="entry" data-type="added" data-audiences="skill-users" data-action="false"><p class="item-title"><strong>Use Shiplog in any repository</strong></p><div class="item-desc"><p>Install the skill into a repository with one command and commit it, so everyone on the team gets it in Claude Code. Setup detects the app name from package.json, pyproject.toml, Cargo.toml, go.mod or the git remote, and the tag style from existing tags. Commands work from any folder in the repository.</p></div><p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span></p></li>
+<li class="entry" data-type="added" data-audiences="skill-users" data-action="false"><p class="item-title"><strong>Import an existing CHANGELOG.md</strong></p><div class="item-desc"><p>Ask Claude to import your Keep a Changelog file and each version becomes a Shiplog release. Old entries don&#x27;t say who is affected, so every imported entry is marked for review, and the validator lists them until you confirm the impact.</p></div><p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span></p></li>
+<li class="entry" data-type="added" data-audiences="skill-users" data-action="false"><p class="item-title"><strong>A feed for each audience</strong></p><div class="item-desc"><p>Besides the main feed, each audience now gets its own Atom feed with only the changes that affect it, plus changes for everyone. The changelog page links to all of them, so admins can subscribe to admin changes only.</p></div><p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span></p></li>
+<li class="entry" data-type="added" data-audiences="skill-users" data-action="false"><p class="item-title"><strong>Translate the changelog page and get link previews</strong></p><div class="item-desc"><p>Every label on the page, including month names and the date format, can be translated in the config. Pages now include Open Graph and canonical tags, so links shared in chat or social apps show a proper preview.</p></div><p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span></p></li>
+<li class="entry" data-type="added" data-audiences="skill-users contributors" data-action="false"><p class="item-title"><strong>Autocomplete for release files in your editor</strong></p><div class="item-desc"><p>Release files and the config now point to a JSON Schema, so editors like VS Code suggest field names and flag mistakes while you type.</p></div><p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span><span class="tag">Shiplog contributors</span></p></li></ul></section>
+<section class="group" aria-labelledby="v0-2-0-changed"><h3 id="v0-2-0-changed">Improvements</h3><ul class="items"><li class="entry" data-type="changed" data-audiences="skill-users" data-action="false"><p class="item-title"><strong>Releases are drafted faster, with fewer questions</strong></p><div class="item-desc"><p>Claude now reads a compact one-line-per-change summary instead of every commit in full, and asks all its questions about impact in one message. If you already gave the version or impact details, it doesn&#x27;t ask again. When the GitHub CLI is available, pull request titles, descriptions and labels are fetched in a single request.</p></div><p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span></p></li>
+<li class="entry" data-type="changed" data-audiences="skill-users" data-action="false"><p class="item-title"><strong>Changes are grouped by pull request</strong></p><div class="item-desc"><p>Repositories that use merge commits or squash merges now get one suggested entry per pull request, titled with the pull request&#x27;s title, instead of one per commit. Previously the pull request titles in merge commits were skipped.</p></div><p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span></p></li>
+<li class="entry" data-type="changed" data-audiences="skill-users" data-action="false"><p class="item-title"><strong>Older releases move to yearly archive pages</strong></p><div class="item-desc"><p>The main changelog page now shows the latest 20 releases. Older releases are on one page per year, linked at the bottom of every page. Feeds and CHANGELOG.md link to the right page. Links to an older release on the main page now land on the main page without jumping to it; set page_size to 0 in the config to keep everything on one page.</p></div><p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span></p></li>
+<li class="entry" data-type="changed" data-audiences="skill-users ci-maintainers" data-action="true"><p class="item-title"><strong>Python 3.10 or newer</strong> <span class="badge action">Action required</span></p><div class="item-desc"><p>Shiplog is now tested on Python 3.10 through 3.13. Python 3.8 and 3.9 are no longer supported.</p></div><p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span><span class="tag">Maintainers of the Shiplog CI workflow</span></p></li>
+<li class="entry" data-type="changed" data-audiences="skill-users ci-maintainers" data-action="false"><p class="item-title"><strong>More helpful validation messages</strong></p><div class="item-desc"><p>Validation messages now name the file and the entry title, so problems are easy to find. The validator also warns when the newest release has a deadline that has passed, and when a deprecation doesn&#x27;t say what to use instead.</p></div><p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span><span class="tag">Maintainers of the Shiplog CI workflow</span></p></li>
+<li class="entry" data-type="changed" data-audiences="ci-maintainers" data-action="false"><p class="item-title"><strong>CI workflow template reads full history and can post to Slack</strong></p><div class="item-desc"><p>New workflows fetch the full git history and tags, and include an optional step that announces tagged releases in Slack. Existing workflows keep working. To get the new template and scripts, run the setup again with the force option.</p></div><p class="tags"><span class="sr-only">Affects: </span><span class="tag">Maintainers of the Shiplog CI workflow</span></p></li></ul></section>
+<section class="group" aria-labelledby="v0-2-0-fixed"><h3 id="v0-2-0-fixed">Fixes</h3><ul class="items"><li class="entry" data-type="fixed" data-audiences="skill-users ci-maintainers" data-action="false"><p class="item-title"><strong>The changelog page no longer changes on every render</strong></p><div class="item-desc"><p>Pages used to include the date they were built, so rendering unchanged releases on another day produced a diff. The footer now shows the latest release date, and re-rendering gives identical files.</p></div><p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span><span class="tag">Maintainers of the Shiplog CI workflow</span></p></li>
+<li class="entry" data-type="fixed" data-audiences="skill-users ci-maintainers" data-action="false"><p class="item-title"><strong>Better version suggestions</strong></p><div class="item-desc"><p>After a pre-release such as 1.2.0-beta.1, the suggested version is now 1.2.0 instead of 1.2.1 or 1.3.0. First releases are suggested as 0.1.0, tags on other branches are ignored, and shallow CI checkouts get a clear message instead of a wrong range.</p></div><p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span><span class="tag">Maintainers of the Shiplog CI workflow</span></p></li>
+<li class="entry" data-type="fixed" data-audiences="skill-users" data-action="false"><p class="item-title"><strong>Fewer false warnings about jargon</strong></p><div class="item-desc"><p>Phrases like &quot;our #1 priority&quot;, product names that contain words such as Hotfix, and standards like UTF-8 or ISO-8601 no longer trigger warnings. You can also list accepted terms in the config.</p></div><p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span></p></li>
+<li class="entry" data-type="fixed" data-audiences="skill-users" data-action="false"><p class="item-title"><strong>Your hand-written CHANGELOG.md is never overwritten</strong></p><div class="item-desc"><p>Shiplog used to replace an existing CHANGELOG.md the first time it rendered. Now it leaves a hand-written file alone and offers to import it; once imported, the old entries carry over into the generated file.</p></div><p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span></p></li>
+<li class="entry" data-type="fixed" data-audiences="skill-users" data-action="false"><p class="item-title"><strong>First releases in repositories without tags</strong></p><div class="item-desc"><p>Without version tags, Shiplog now asks where the release starts instead of summarizing the whole history, uses the version in your package manifest as the starting point, and warns when you&#x27;re on a feature branch rather than the main branch.</p></div><p class="tags"><span class="sr-only">Affects: </span><span class="tag">People using the skill in Claude Code</span></p></li></ul></section></div></article>
 </main>
 
 <footer class="site">
@@ -222,25 +209,37 @@ footer.site { color: var(--muted); font-size: .9rem; }
   var form = document.getElementById('filters');
   if (!form || !document.querySelector) return;
   form.hidden = false;
-  var entries = Array.prototype.slice.call(document.querySelectorAll('li.entry'));
-  var groups = Array.prototype.slice.call(document.querySelectorAll('section.group'));
-  var releases = Array.prototype.slice.call(document.querySelectorAll('article.release'));
+  function all(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+  var entries = all('.entry');
+  var actions = all('.action-item');
   var count = document.getElementById('result-count');
+  function forAudience(el, aud) {
+    if (!aud) return true;
+    var a = (el.dataset.audiences || '').split(' ');
+    return a.indexOf(aud) !== -1 || a.indexOf('everyone') !== -1;
+  }
   function apply() {
-    var types = Array.prototype.slice.call(form.querySelectorAll('input[name=type]:checked')).map(function (i) { return i.value; });
     var aud = form.audience.value;
     var onlyAction = form.action.checked;
     var q = form.q.value.trim().toLowerCase();
     var shown = 0;
-    entries.forEach(function (li) {
-      var ok = types.indexOf(li.dataset.type) !== -1;
-      if (ok && aud) { var a = li.dataset.audiences.split(' '); ok = a.indexOf(aud) !== -1 || a.indexOf('everyone') !== -1; }
-      if (ok && onlyAction) ok = li.dataset.action === 'true';
-      if (ok && q) ok = li.textContent.toLowerCase().indexOf(q) !== -1;
-      li.hidden = !ok; if (ok) shown++;
+    entries.forEach(function (el) {
+      var ok = forAudience(el, aud);
+      if (ok && onlyAction) ok = el.dataset.action === 'true';
+      if (ok && q) ok = el.textContent.toLowerCase().indexOf(q) !== -1;
+      el.hidden = !ok; if (ok) shown++;
     });
-    groups.forEach(function (g) { g.hidden = !g.querySelector('li.entry:not([hidden])'); });
-    releases.forEach(function (r) { r.hidden = !r.querySelector('li.entry:not([hidden])'); });
+    actions.forEach(function (el) {
+      var ok = forAudience(el, aud);
+      if (ok && q) ok = el.textContent.toLowerCase().indexOf(q) !== -1;
+      el.hidden = !ok;
+    });
+    all('section.group, aside.callout').forEach(function (g) {
+      g.hidden = !g.querySelector('li:not([hidden])');
+    });
+    all('article.release').forEach(function (r) {
+      r.hidden = !r.querySelector('.entry:not([hidden])');
+    });
     count.textContent = shown === entries.length
       ? count.dataset.all.replace('{n}', shown)
       : count.dataset.some.replace('{shown}', shown).replace('{total}', entries.length);

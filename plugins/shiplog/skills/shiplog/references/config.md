@@ -39,6 +39,7 @@ Lives at the repo root. It holds either a single app object, or `{"apps": [...]}
 | `output_dir` | `changelog/<id>` | Where rendered files go. Deploy this folder. |
 | `base_url` | `""` | Public URL of the page. Used for absolute feed links and CHANGELOG.md version links. |
 | `changelog_md` | `true` | `true` writes `<path>/CHANGELOG.md`, a string sets a custom path, `false` disables it. |
+| `changelog_md_mode` | `"insert"` | For a hand-written `CHANGELOG.md`: `"insert"` adds each new release above the newest one in the file's own format and never changes existing lines. `"regenerate"` has Shiplog write the whole file (only once every version in it has a release file, e.g. after `shiplog import`). Files Shiplog generated are always regenerated. |
 | `lang` | `en` | Page language attribute (for screen readers). |
 | `audiences` | `[]` | Groups entries can target. `everyone` is always available. |
 | `theme.accent_color` | `#4f46e5` | Hex color for link underlines and controls. A contrast warning prints if it's too low. |

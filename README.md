@@ -47,7 +47,7 @@ From a local clone, `sh install.sh` (or `sh install.sh --user`) does the same wi
 Open Claude Code anywhere in the repo and say "Set up a changelog for this repo". Shiplog:
 
 - detects the app name from `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod` or the git remote, and the tag style from existing tags (`v1.2.3`, `1.2.3`, `release-1.2.3`)
-- never overwrites a hand-written `CHANGELOG.md`. It offers to import it, and your old entries carry over
+- keeps your existing `CHANGELOG.md`: each new release is added above the newest one **in the file's own format** (Keep a Changelog, conventional-changelog, or your own headings, dates and bullets), and existing entries are never changed
 - with no tags yet, asks where the first release starts instead of summarizing years of history
 - warns when you're on a feature branch, since releases come from `main`
 
@@ -119,9 +119,11 @@ The config holds only environment variable **names**. The webhook URLs live in y
 
 ## The page
 
+Laid out the way product teams publish changelogs (Linear, Raycast, Notion): each release has a date and version column, a feature headline, a short intro and optional hero image. Then an **Action required** box, 1 to 3 highlighted features with their own heading and screenshot, and compact **New / Improvements / Fixes** lists. Audience labels show who each change is for.
+
 - Semantic HTML, a skip link, visible focus, and a correct heading order. It's readable without JavaScript.
 - WCAG AA contrast in light and dark mode. Status is shown as text, never color alone.
-- Filters by change type, audience and "action required", plus search. The result count is announced to screen readers.
+- A slim filter bar: show changes for one audience, "action required" only, and search. The result count is announced to screen readers.
 - Permalinks for every release. The latest 20 releases on the main page, older ones on yearly archive pages.
 - Atom and JSON feeds, plus one Atom feed per audience.
 - Open Graph tags for link previews. Every label can be translated through `strings` in the config.

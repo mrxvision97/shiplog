@@ -23,10 +23,21 @@
       "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
       "description": "YYYY-MM-DD, the day it reached users."
     },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "pattern": "\\S",
+      "description": "Headline for the release, led by the main feature (e.g. \"Bulk export and faster search\"). Defaults to summary."
+    },
     "summary": {
       "type": "string",
-      "maxLength": 120,
-      "description": "One-line headline."
+      "maxLength": 280,
+      "description": "One or two sentences introducing the release, under the headline. Also used as the headline when there is no title."
+    },
+    "image": {
+      "$ref": "#/definitions/image",
+      "description": "Optional hero image under the headline."
     },
     "yanked": {
       "type": "boolean",
@@ -130,6 +141,13 @@
         "_needs_review": {
           "type": "boolean",
           "description": "Set by import_changelog.py. Delete once audiences and actions are confirmed."
+        },
+        "highlight": {
+          "type": "boolean",
+          "description": "Show as a full section with its own heading. Without any, new features (up to 3) are highlighted."
+        },
+        "image": {
+          "$ref": "#/definitions/image"
         }
       },
       "allOf": [
@@ -195,6 +213,24 @@
           }
         }
       ]
+    },
+    "image": {
+      "type": "object",
+      "required": [
+        "url",
+        "alt"
+      ],
+      "properties": {
+        "url": {
+          "type": "string",
+          "pattern": "^https?://"
+        },
+        "alt": {
+          "type": "string",
+          "minLength": 3,
+          "description": "What the image shows, for screen readers."
+        }
+      }
     }
   }
 }
