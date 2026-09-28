@@ -138,6 +138,64 @@
               "type": "string"
             }
           }
+        },
+        "notify": {
+          "type": "object",
+          "description": "Release announcements. Holds env var NAMES only, never secrets.",
+          "properties": {
+            "slack": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "webhook_env": {
+                    "type": "string",
+                    "description": "Env var holding an incoming webhook URL."
+                  },
+                  "token_env": {
+                    "type": "string",
+                    "description": "Env var holding a bot token (xoxb-...). Enables threaded details."
+                  },
+                  "channel": {
+                    "type": "string",
+                    "description": "Channel ID for bot-token mode."
+                  },
+                  "audiences": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "include_internal": {
+                    "type": "boolean"
+                  },
+                  "mention": {
+                    "type": "string",
+                    "description": "@here, @channel, or <!subteam^ID> for a user group."
+                  }
+                },
+                "anyOf": [
+                  {
+                    "required": [
+                      "webhook_env"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "token_env",
+                      "channel"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
         }
       }
     }

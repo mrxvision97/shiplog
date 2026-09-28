@@ -104,7 +104,11 @@ It checks the release file (and the rest of the app), then writes `index.html`, 
 
 (`shiplog validate` and `shiplog render` still exist for running the steps separately.)
 
-### 7. Wrap up
+### 7. Offer to announce in Slack
+
+If the app's config has `notify.slack`, offer to announce the release. Run `shiplog notify --app <id> --version <v> --dry-run` first and show the user, per channel, which entries will be posted. Send (`shiplog notify --app <id> --version <v>`) **only after the user confirms**. If a channel fails, report the error. Don't retry with `--force` unless asked. Setup help is in `references/slack.md`. If nothing is configured, mention the option in one line and move on.
+
+### 8. Wrap up
 
 Tell the user briefly what was written and where, and the next steps: commit the release file and outputs, tag `v2.4.0`, deploy `output_dir`. Don't create tags, push or deploy unless asked.
 

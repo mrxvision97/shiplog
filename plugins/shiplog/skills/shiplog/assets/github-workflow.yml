@@ -19,6 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history and tags, so collect/validate see every release
 
       - uses: actions/setup-python@v5
         with:
@@ -30,6 +32,17 @@ jobs:
       - name: Require a changelog entry for this release tag
         if: startsWith(github.ref, 'refs/tags/')
         run: python .shiplog/scripts/validate.py --tag "${GITHUB_REF_NAME}"
+
+      # Optional: announce the release in Slack once validation has passed.
+      # Add each webhook URL (or bot token) as a repository secret, using the
+      # env var names from notify.slack in .shiplog.json, then uncomment.
+      # CI doesn't commit .notified.json back, so each tag build sends once.
+      # - name: Announce release in Slack
+      #   if: startsWith(github.ref, 'refs/tags/')
+      #   run: python .shiplog/scripts/shiplog.py notify --tag "${GITHUB_REF_NAME}"
+      #   env:
+      #     SLACK_WEBHOOK_UPDATES: ${{ secrets.SLACK_WEBHOOK_UPDATES }}
+      #     SLACK_WEBHOOK_SUPPORT: ${{ secrets.SLACK_WEBHOOK_SUPPORT }}
 
       - name: Render changelog pages
         run: python .shiplog/scripts/render.py --all --skip-validate

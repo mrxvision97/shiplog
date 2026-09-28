@@ -46,6 +46,7 @@ Lives at the repo root. It holds either a single app object, or `{"apps": [...]}
 | `theme.og_image` | none | Image for link previews (`og:image`). |
 | `page_size` | `20` | Releases on `index.html`. Older ones go to one archive page per year (`2025.html`, …). `0` puts everything on one page. |
 | `strings` | English | Page labels, for translating the page. See below. |
+| `notify.slack` | none | Slack channels to announce releases in. Env var names only. See `slack.md`. |
 | `project_url` | Shiplog repo | Footer link target. |
 | `allowed_terms` | `[]` | Words the jargon check accepts, e.g. a product called "Hotfix Hub". Capitalized mid-sentence words are already treated as names. |
 

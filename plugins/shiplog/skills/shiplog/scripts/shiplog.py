@@ -26,6 +26,7 @@ COMMANDS = {
     "validate": "validate",
     "render": "render",
     "import": "import_changelog",
+    "notify": "notify",
 }
 
 
