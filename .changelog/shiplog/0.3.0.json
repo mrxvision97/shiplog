@@ -3,44 +3,69 @@
   "version": "0.3.0",
   "date": "2026-09-28",
   "title": "A changelog page like the best product teams publish",
-  "summary": "The page now reads like Linear's or Raycast's changelog, and Shiplog adds new releases to your existing CHANGELOG.md in its own format.",
+  "summary": "The page now reads like Linear's or Raycast's changelog, and Shiplog adds new releases to your existing changelog in its own format, in any major language.",
   "entries": [
     {
       "type": "changed",
       "title": "A redesigned changelog page",
       "description": "Each release now has a headline, a short intro and an optional hero image, with the date and version in a column beside it. Anything readers must do is collected in one Action required box at the top. The biggest changes get their own section with a heading, text, screenshot and links, and everything else is listed compactly under New, Improvements and Fixes. Audience labels show who a change is for.",
-      "audiences": ["skill-users"],
+      "audiences": [
+        "skill-users"
+      ],
       "action_required": false,
       "highlight": true,
-      "links": [{"label": "How a release is shown", "url": "https://github.com/mrxvision97/shiplog/blob/main/plugins/shiplog/skills/shiplog/references/schema.md"}]
+      "links": [
+        {
+          "label": "How a release is shown",
+          "url": "https://github.com/mrxvision97/shiplog/blob/main/plugins/shiplog/skills/shiplog/references/schema.md"
+        }
+      ]
     },
     {
       "type": "added",
       "title": "New releases added to your existing CHANGELOG.md",
       "description": "If your repository already has a hand-written CHANGELOG.md, Shiplog now adds each new release above the newest one, in the same format: the same headings, date style, section names, bullets and pull request links. It works with Keep a Changelog, conventional-changelog and custom formats. Existing entries are never changed, and a release is never added twice.",
-      "audiences": ["skill-users"],
+      "audiences": [
+        "skill-users"
+      ],
       "action_required": false,
       "highlight": true
     },
     {
       "type": "added",
+      "title": "Tested across the major programming languages",
+      "description": "Shiplog now detects your project from package.json, pyproject.toml, go.mod, pom.xml, Gradle settings, .NET project files, composer.json, gemspecs and Cargo.toml. It finds changelogs named HISTORY.md, CHANGES or NEWS, understands underlined headings, label-style sections and changelogs without sections, and reads tag styles like 4.18.2 turning into v5.2.1. Tested on real JavaScript, TypeScript, Python, Go, Java, Kotlin, C#, PHP, Ruby and Rust projects.",
+      "audiences": [
+        "skill-users"
+      ],
+      "action_required": false
+    },
+    {
+      "type": "added",
       "title": "Headlines, highlights and images in release files",
       "description": "Release files can now have a title headline, a longer intro, a hero image, and entries marked as highlights with their own screenshot. All are optional; existing release files keep working, and new features are highlighted automatically.",
-      "audiences": ["skill-users", "contributors"],
+      "audiences": [
+        "skill-users",
+        "contributors"
+      ],
       "action_required": false
     },
     {
       "type": "changed",
       "title": "A simpler filter bar",
       "description": "The filter box is now a single bar: choose an audience, show only changes that need action, or search.",
-      "audiences": ["skill-users"],
+      "audiences": [
+        "skill-users"
+      ],
       "action_required": false
     },
     {
       "type": "fixed",
       "title": "Stronger contrast for secondary text",
       "description": "Section labels and counts on the changelog page now meet WCAG AA contrast in light mode.",
-      "audiences": ["skill-users"],
+      "audiences": [
+        "skill-users"
+      ],
       "action_required": false
     }
   ]

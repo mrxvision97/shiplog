@@ -20,8 +20,8 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from _common import (ENTRY_TYPES, TYPE_LABELS, audience_label, find_root, is_generated,  # noqa: E402
-                     load_config, load_releases, select_app, ui_strings)
+from _common import (ENTRY_TYPES, TYPE_LABELS, audience_label, find_changelog, find_root,  # noqa: E402
+                     is_generated, load_config, load_releases, select_app, ui_strings)
 import changelog_md  # noqa: E402
 import validate  # noqa: E402
 
@@ -542,8 +542,11 @@ def render_app(app, root, internal, quiet=False):
                 os.remove(os.path.join(out_dir, name))
     md = app.get("changelog_md", True)
     if md:
-        md_path = os.path.join(root, md if isinstance(md, str) else os.path.join(app.get("path", "."), "CHANGELOG.md"))
-        if os.path.exists(md_path) and not is_generated(md_path) and app.get("changelog_md_mode") != "regenerate":
+        app_dir = os.path.join(root, app.get("path", "."))
+        md_path = os.path.join(root, md) if isinstance(md, str) else os.path.join(
+            app_dir, find_changelog(app_dir) or "CHANGELOG.md")
+        hand_written = os.path.exists(md_path) and not is_generated(md_path)
+        if hand_written and (app.get("changelog_md_mode") != "regenerate" or not md_path.endswith(".md")):
             # A hand-written changelog: add new releases in its own format, never rewrite it.
             with open(md_path, encoding="utf-8", newline="") as f:
                 text = f.read()

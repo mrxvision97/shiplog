@@ -142,6 +142,47 @@ GENERIC_NAMES = {"web", "app", "frontend", "front-end", "client", "server", "bac
 PLACEHOLDER_VERSIONS = {"0.0.0", "0.0.1", "0.1.0", "1.0.0"}
 
 
+def _xml_manifest(root):
+    """Name, description and version from Maven, Gradle or .NET project files."""
+    def read(name):
+        try:
+            with open(os.path.join(root, name), encoding="utf-8") as f:
+                return f.read()
+        except (OSError, UnicodeDecodeError):
+            return ""
+    def tag(text, *names):
+        for n in names:
+            m = re.search(r"<%s>\s*([^<]+?)\s*</%s>" % (n, n), text)
+            if m and "${" not in m.group(1):
+                return m.group(1)
+        return None
+    pom = read("pom.xml")
+    if pom:
+        body = re.sub(r"<parent>.*?</parent>|<dependencies>.*?</dependencies>|<build>.*?</build>", "", pom, flags=re.S)
+        name = tag(body, "name", "artifactId")
+        if name:
+            return {k: v for k, v in (("name", name), ("description", tag(body, "description")),
+                                      ("version", tag(body, "version"))) if v}
+    for settings in ("settings.gradle.kts", "settings.gradle"):
+        m = re.search(r"rootProject\.name\s*=\s*[\"']([^\"']+)", read(settings))
+        if m:
+            gradle = read("build.gradle.kts") or read("build.gradle")
+            v = re.search(r"^\s*version\s*=\s*[\"']([^\"']+)", gradle, re.M)
+            return {"name": m.group(1), **({"version": v.group(1)} if v else {})}
+    try:
+        projects = sorted(n for n in os.listdir(root) if n.endswith((".csproj", ".fsproj", ".vbproj")))
+    except OSError:
+        projects = []
+    props = read("Directory.Build.props")
+    if projects or props:
+        text = (read(projects[0]) if projects else "") + props
+        name = tag(text, "PackageId", "AssemblyName", "Product") or (projects[0].rsplit(".", 1)[0] if projects else None)
+        if name:
+            return {k: v for k, v in (("name", name), ("description", tag(text, "Description")),
+                                      ("version", tag(text, "Version", "VersionPrefix"))) if v}
+    return None
+
+
 def detect_project(root="."):
     """Best-effort name, description and version from common manifests.
     Keys are missing when nothing was found."""
@@ -173,7 +214,30 @@ def detect_project(root="."):
     if text and not info.get("name"):
         m = re.search(r"^module\s+(\S+)", text, re.M)
         if m:
-            info["name"] = m.group(1).rstrip("/").split("/")[-1]
+            parts = m.group(1).rstrip("/").split("/")
+            if len(parts) > 1 and re.match(r"^v\d+$", parts[-1]):  # github.com/go-chi/chi/v5
+                parts = parts[:-1]
+            info["name"] = parts[-1]
+    if not info.get("name"):
+        info.update(_xml_manifest(root) or {})
+    text = read("composer.json")
+    if text and not info.get("name"):
+        try:
+            pkg = json.loads(text)
+            if isinstance(pkg, dict) and isinstance(pkg.get("name"), str):
+                info = {"name": pkg["name"].split("/")[-1]}
+                info.update({k: pkg[k] for k in ("description", "version") if isinstance(pkg.get(k), str)})
+        except ValueError:
+            pass
+    for fname in sorted(os.listdir(root)) if os.path.isdir(root) and not info.get("name") else ():
+        if fname.endswith(".gemspec"):
+            m = re.search(r"\.name\s*=\s*[\"']([^\"']+)", read(fname) or "")
+            if m:
+                info["name"] = m.group(1)
+                d = re.search(r"\.summary\s*=\s*[\"']([^\"']+)", read(fname) or "")
+                if d:
+                    info["description"] = d.group(1)
+                break
     if not info.get("name") or info["name"].lower() in GENERIC_NAMES:
         try:
             r = subprocess.run(["git", "remote", "get-url", "origin"], cwd=root, capture_output=True, text=True)
@@ -182,6 +246,9 @@ def detect_project(root="."):
                 info["name"] = m.group(1)
         except OSError:
             pass
+    if info.get("name"):
+        # Build-module names ("gson-parent", "Moshi Root") name the build, not the product.
+        info["name"] = re.sub(r"[\s_-]+(parent|root|aggregator|project|all|bom)$", "", info["name"], flags=re.I)
     if not info.get("name") or info["name"].lower() in GENERIC_NAMES:
         top = git_toplevel(root)
         if top:
@@ -208,16 +275,36 @@ def semver_tags(root="."):
 
 
 def detect_tag_prefix(root="."):
-    """The most common prefix of existing version tags ("v", "", "release-"), or None."""
-    counts = {}
-    for prefix, _, _ in semver_tags(root):
+    """The prefix of the project's release tags ("v", "", "release-"), or None.
+
+    The prefix carrying the highest version wins, so a project that moved from
+    "4.18.2" to "v5.2.1" is read by its current style, and package tags in a
+    monorepo ("ignore-0.4.33") don't outrank the product's "15.2.0". Ties go to the
+    most common prefix."""
+    best, counts = {}, {}
+    for prefix, version, _ in semver_tags(root):
         counts[prefix] = counts.get(prefix, 0) + 1
-    if not counts:
+        if prefix not in best or semver_key(version) > semver_key(best[prefix]):
+            best[prefix] = version
+    if not best:
         return None
-    return max(sorted(counts), key=lambda p: counts[p])
+    return max(sorted(best), key=lambda p: (semver_key(best[p]), counts[p]))
 
 
 GENERATED_MARKER = "Generated by Shiplog"
+# Changelog file names used across ecosystems, in order of preference.
+CHANGELOG_NAMES = ["CHANGELOG.md", "Changelog.md", "changelog.md", "CHANGES.md", "HISTORY.md", "History.md",
+                   "NEWS.md", "RELEASES.md", "CHANGELOG", "CHANGES", "HISTORY", "NEWS", "CHANGELOG.rst",
+                   "CHANGES.rst", "HISTORY.rst", "NEWS.rst", "CHANGELOG.txt", "CHANGES.txt"]
+
+
+def find_changelog(directory):
+    """The existing changelog file in DIRECTORY (a name from CHANGELOG_NAMES), or None."""
+    try:
+        present = set(os.listdir(directory))
+    except OSError:
+        return None
+    return next((n for n in CHANGELOG_NAMES if n in present), None)
 
 
 def is_generated(path):

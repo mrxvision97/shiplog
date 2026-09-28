@@ -42,6 +42,26 @@ curl -fsSL https://raw.githubusercontent.com/mrxvision97/shiplog/main/install.sh
 
 From a local clone, `sh install.sh` (or `sh install.sh --user`) does the same without downloading. Requires Python 3.10+ and git. There are no other dependencies.
 
+On Windows, run the install command in Git Bash (included with Git for Windows).
+
+### Works with your stack
+
+Shiplog only needs git and Python 3.10+, whatever your project is written in. It was tested on real projects in each of these ecosystems:
+
+| Ecosystem | Tested on | Detected from |
+|---|---|---|
+| JavaScript / TypeScript | express, axios | `package.json` |
+| Python | requests | `pyproject.toml` |
+| Go | chi | `go.mod` (including `/v5` module paths) |
+| Java / Kotlin | gson (Maven), moshi (Gradle) | `pom.xml`, `settings.gradle(.kts)` |
+| C# / .NET | Polly | `*.csproj`, `Directory.Build.props` |
+| PHP | guzzle | `composer.json` |
+| Ruby | sinatra | `*.gemspec` |
+| Rust | ripgrep | `Cargo.toml` |
+
+- **Tags:** `v1.2.3`, `1.2.3`, `release-1.2.3`, `pkg-parent-1.2.3`, and projects that changed style over time.
+- **Existing changelogs:** `CHANGELOG.md`, `HISTORY.md`, `CHANGES`, `NEWS` and more, in Keep a Changelog, conventional-changelog, underlined headings (`1.2.0 (date)` over `====`), `**Bugfixes**` or `Bug fixes:` labels, or plain bullets under each version. New releases match the file; old entries are never touched.
+
 ### First run in an existing repo
 
 Open Claude Code anywhere in the repo and say "Set up a changelog for this repo". Shiplog:

@@ -30,15 +30,15 @@ def added_lines(old, new):
 
 
 class InsertTest(unittest.TestCase):
-    def check(self, fixture, expected):
+    def check(self, fixture, expected, release=RELEASE):
         old = load(fixture)
-        new, added, notes = cm.insert_releases(old, [RELEASE])
-        self.assertEqual(added, ["1.3.0"])
+        new, added, notes = cm.insert_releases(old, [release])
+        self.assertEqual(added, [release["version"]])
         self.assertEqual(notes, [])
         lines = added_lines(old, new)
         for line in expected:
             self.assertIn(line, lines)
-        again, added2, _ = cm.insert_releases(new, [RELEASE])
+        again, added2, _ = cm.insert_releases(new, [release])
         self.assertEqual((again, added2), (new, []))  # never added twice
         return new
 
@@ -66,6 +66,35 @@ class InsertTest(unittest.TestCase):
             "## v1.3.0 — September 28, 2026", "### 🚀 New", "### 🐛 Fixes",
             "* Export whole reports as CSV in one step from the Reports page.",
             "* Signing in no longer sends you back to the login page."])
+
+    def test_underlined_headings_and_bold_labels(self):
+        # Python projects (requests' HISTORY.md): "2.34.2 (date)" over dashes, **Bugfixes** labels.
+        new = self.check("underlined.md", [
+            "2.34.3 (2026-09-28)", "-------------------", "**Bugfixes**", "**Improvements**",
+            "**Bugfixes**", "- Login redirect loop. (#43)"],
+            release=dict(RELEASE, version="2.34.3"))
+        self.assertLess(new.index("dev\n---"), new.index("2.34.3"))
+        self.assertIn("(#43)\n\n\n2.34.2", new)  # keeps the two blank lines between releases
+
+    def test_no_sections(self):
+        # Go, Java, .NET projects often list changes straight under the version.
+        new = self.check("sectionless.md", [
+            "## v5.0.13 (2026-09-28)",
+            "- Export whole reports as CSV in one step from the Reports page."],
+            release=dict(RELEASE, version="5.0.13"))
+        block = new[new.index("## v5.0.13"):new.index("## v5.0.12")]
+        self.assertNotIn("###", block)
+
+    def test_colon_labels(self):
+        # Rust projects (ripgrep): underlined with "=", sections as "Bug fixes:".
+        self.check("labels.md", ["15.2.1 (2026-09-28)", "===================", "Bug fixes:",
+                                 "Feature enhancements:"], release=dict(RELEASE, version="15.2.1"))
+
+    def test_file_that_changed_style(self):
+        # axios: newer releases are "## v1.19.0 — date" with same-level emoji sections.
+        new = self.check("mixed_levels.md", ["## v1.20.0 — September 28, 2026", "## 🚀 New Features",
+                                             "## 🐛 Bug Fixes"], release=dict(RELEASE, version="1.20.0"))
+        self.assertLess(new.index("## v1.20.0"), new.index("## v1.19.0"))
 
     def test_crlf_and_older_versions(self):
         old = load("kac.md").replace("\n", "\r\n")

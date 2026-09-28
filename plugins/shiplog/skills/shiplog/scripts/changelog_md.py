@@ -1,20 +1,27 @@
-"""Add new releases to an existing, hand-written CHANGELOG.md in its own format.
+"""Add new releases to an existing, hand-written changelog in its own format.
 
-The file's style is learned from its existing entries: the version heading
-(brackets, "v", links, where the date goes and how it's written), section names
-("### Added" or "### 🐛 Bug Fixes"), bullet character, how long items are, how PRs
-are referenced, and blank-line spacing. New releases are inserted above the
-newest existing one. Existing lines are never changed, and a version that is
-already in the file is never added again.
+The file's style is learned from its existing entries:
+- version headings: "## [1.2.0] - 2024-01-05", "## v1.2.0 (2024-01-05)", "## Version 1.2.0",
+  links to compare views, or underlined ("1.2.0 (2024-01-05)" over "=====" or "-----")
+- sections: "### Added", "### 🐛 Bug Fixes", "**Bugfixes**", "Bug fixes:", or none at all
+- bullets, item length, PR reference style, blank-line spacing and line endings
+
+New releases are inserted above the newest existing one. Existing lines are
+never changed, and a version already in the file is never added again.
+Works for Markdown, and for reStructuredText and plain-text files that use
+underlined headings.
 """
 import datetime
 import re
 
 from _common import TYPE_LABELS, parse_semver, semver_key
 
-HEADING_RE = re.compile(r"^(#{1,6})\s+(.*?)\s*$")
+ATX_RE = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
+UNDERLINE_RE = re.compile(r"^(=+|-+)\s*$")
 VERSION_RE = re.compile(r"(?<![\w.])v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?![\w.])")
 BULLET_RE = re.compile(r"^([-*+])\s+(.*)$")
+BOLD_LABEL_RE = re.compile(r"^\*\*([^*]+?):?\*\*:?\s*$")
+COLON_LABEL_RE = re.compile(r"^([A-Z][A-Za-z &/-]{2,40}):\s*$")
 LINK_REF_RE = re.compile(r"^\[([^\]]+)\]:\s*\S+")
 PR_LINK_RE = re.compile(r"\(\[#(\d+)\]\((https?://[^)\s]+)\)\)")
 PR_PLAIN_RE = re.compile(r"\(#\d+\)")
@@ -34,12 +41,12 @@ DATE_STYLES = [
 # Section names used in the wild, mapped to Shiplog's types.
 SECTION_TYPES = {
     "added": "added", "new": "added", "features": "added", "feature": "added", "new features": "added",
-    "whats new": "added", "enhancements": "changed", "changed": "changed", "changes": "changed",
-    "improved": "changed", "improvements": "changed", "updated": "changed", "performance": "changed",
-    "performance improvements": "changed", "breaking changes": "changed", "breaking": "changed",
-    "deprecated": "deprecated", "deprecations": "deprecated", "removed": "removed", "removals": "removed",
-    "fixed": "fixed", "fixes": "fixed", "bug fixes": "fixed", "bugfixes": "fixed", "bug fix": "fixed",
-    "security": "security", "security fixes": "security",
+    "whats new": "added", "feature enhancements": "added", "enhancements": "changed", "changed": "changed",
+    "changes": "changed", "improved": "changed", "improvements": "changed", "updated": "changed",
+    "performance": "changed", "performance improvements": "changed", "breaking changes": "changed",
+    "breaking": "changed", "deprecated": "deprecated", "deprecations": "deprecated", "removed": "removed",
+    "removals": "removed", "fixed": "fixed", "fixes": "fixed", "bug fixes": "fixed", "bugfixes": "fixed",
+    "bug fix": "fixed", "security": "security", "security fixes": "security",
 }
 DEFAULT_ORDER = ["added", "changed", "deprecated", "removed", "fixed", "security"]
 
@@ -48,26 +55,58 @@ def norm(label):
     return " ".join(re.sub(r"[^a-z ]+", " ", label.lower()).split())
 
 
-def version_headings(lines):
-    """[(index, level, version)] for headings that name a SemVer version."""
+def headings(lines):
+    """[(index, level, text, underline)] for ATX ("## x") and underlined headings."""
     out = []
-    for i, line in enumerate(lines):
-        m = HEADING_RE.match(line.rstrip("\r\n"))
-        if not m:
+    for i, raw in enumerate(lines):
+        line = raw.rstrip("\r\n")
+        m = ATX_RE.match(line)
+        if m:
+            out.append((i, len(m.group(1)), m.group(2), None))
             continue
-        v = VERSION_RE.search(m.group(2))
+        nxt = lines[i + 1].rstrip("\r\n") if i + 1 < len(lines) else ""
+        u = UNDERLINE_RE.match(nxt)
+        if u and line.strip() and not BULLET_RE.match(line) and len(u.group(1)) >= 3:
+            out.append((i, 1 if u.group(1)[0] == "=" else 2, line.strip(), u.group(1)[0]))
+    return out
+
+
+def version_headings(lines):
+    """[(index, level, version, underline_char)] for headings that name a SemVer version."""
+    found = []
+    for i, level, text, under in headings(lines):
+        v = VERSION_RE.search(text)
         if v and parse_semver(v.group(1)):
-            out.append((i, len(m.group(1)), v.group(1)))
-    if not out:
+            found.append((i, level, v.group(1), under))
+    if not found:
         return []
-    level = min(lvl for _, lvl, _ in out)  # sections may mention versions too
-    return [h for h in out if h[1] == level]
+    # The topmost version heading sets the level: files that changed style over the years
+    # (axios: "## v1.19.0" on top of older "# [1.13.0]") keep the newer style.
+    top = found[0][1]
+    return [h for h in found if h[1] == top]
 
 
-def count_blanks(lines, start, end):
-    n = 0
-    while start + n < end and not lines[start + n].strip():
-        n += 1
+def section_label(line, level):
+    """(template, label, type) if LINE starts a section like "### Fixed", "**Bugfixes**" or "Bug fixes:"."""
+    m = ATX_RE.match(line)
+    if m and len(m.group(1)) >= level and not VERSION_RE.search(m.group(2)):
+        return m.group(1) + " {label}", m.group(2), SECTION_TYPES.get(norm(m.group(2)))
+    m = BOLD_LABEL_RE.match(line)
+    if m and norm(m.group(1)) in SECTION_TYPES:
+        tpl = "**{label}:**" if line.rstrip().endswith(":**") else (
+            "**{label}**:" if line.rstrip().endswith(":") else "**{label}**")
+        return tpl, m.group(1), SECTION_TYPES[norm(m.group(1))]
+    m = COLON_LABEL_RE.match(line)
+    if m and norm(m.group(1)) in SECTION_TYPES:
+        return "{label}:", m.group(1), SECTION_TYPES[norm(m.group(1))]
+    return None
+
+
+def count_blanks(lines, start, stop, step=1):
+    """Blank lines from START towards STOP (exclusive)."""
+    n, i = 0, start
+    while i != stop and 0 <= i < len(lines) and not lines[i].strip():
+        n, i = n + 1, i + step
     return n
 
 
@@ -89,11 +128,12 @@ def detect_style(text):
     heads = version_headings(lines)
     if not heads:
         return None
-    first, level, latest = heads[0]
+    first, level, latest, under = heads[0]
     prev = heads[1][2] if len(heads) > 1 else None
     heading = lines[first].rstrip("\r\n")
-    style = {"level": level, "latest": latest, "insert_at": first,
-             "newline": "\r\n" if lines[first].endswith("\r\n") else "\n"}
+    style = {"level": level, "latest": latest, "insert_at": first, "underline": under,
+             "newline": "\r\n" if lines[first].endswith("\r\n") else "\n",
+             "gap": count_blanks(lines, first - 1, -1, step=-1) if first else 1}
 
     # Heading template: version, previous version (compare links) and date become slots.
     date_fmt = None
@@ -106,46 +146,44 @@ def detect_style(text):
     heading = re.sub(ver % re.escape(latest), "{version}", heading)
     if prev:
         heading = re.sub(ver % re.escape(prev), "{prev}", heading)
-    style["heading"] = heading
-    style["date_fmt"] = date_fmt
+    style["heading"], style["date_fmt"] = heading, date_fmt
 
-    # Sections, bullets and spacing, learned from the version sections.
-    labels, order, bullets, breaking = {}, [], [], None
-    blanks_after_heading, blanks_before_section, blanks_after_section = 1, 1, 1
-    for n, (i, _, _) in enumerate(heads[:10]):
+    # Sections, bullets and spacing, learned from the most recent releases.
+    labels, order, bullets, breaking, seen_sections = {}, [], [], None, 0
+    body = first + (2 if under else 1)
+    blanks = [count_blanks(lines, body, len(lines)), 1, 0]
+    for n, (i, _, _, u) in enumerate(heads[:10]):
+        start = i + (2 if u else 1)
         end = heads[n + 1][0] if n + 1 < len(heads) else len(lines)
-        if n == 0:
-            blanks_after_heading = count_blanks(lines, i + 1, end)
-        for j in range(i + 1, end):
+        for j in range(start, end):
             raw = lines[j].rstrip("\r\n")
-            m = HEADING_RE.match(raw)
-            if m and len(m.group(1)) > level:
-                t = SECTION_TYPES.get(norm(m.group(2)))
-                if t and "breaking" in norm(m.group(2)):
-                    breaking = breaking or (m.group(1), m.group(2))
+            sec = section_label(raw, level)
+            if sec:
+                tpl, label, t = sec
+                seen_sections += 1
+                if t and "breaking" in norm(label):
+                    breaking = breaking or (tpl, label)
                     t = None
                 if t and t not in labels:
-                    labels[t] = (m.group(1), m.group(2))
+                    labels[t] = (tpl, label)
                 if t and n == 0 and t not in order:
                     order.append(t)
-                if n == 0 and len(order) == 1:
-                    blanks_after_section = count_blanks(lines, j + 1, end)
-                if n == 0 and len(order) == 2:
-                    k, gap = j - 1, 0
-                    while k > i and not lines[k].strip():
-                        k, gap = k - 1, gap + 1
-                    blanks_before_section = gap
+                if seen_sections == 1:
+                    blanks[2] = count_blanks(lines, j + 1, end)
+                elif seen_sections == 2 and n == 0:
+                    blanks[1] = count_blanks(lines, j - 1, start - 1, step=-1)
                 continue
             b = BULLET_RE.match(raw)
             if b:
                 bullets.append(b)
-    section_prefix = next(iter(labels.values()))[0] if labels else "#" * (level + 1)
-    style["sections"] = {t: labels.get(t, (section_prefix, TYPE_LABELS[t])) for t in DEFAULT_ORDER}
+    style["sectioned"] = seen_sections > 0
+    template = next(iter(labels.values()))[0] if labels else "#" * (level + 1) + " {label}"
+    style["sections"] = {t: labels.get(t, (template, TYPE_LABELS[t])) for t in DEFAULT_ORDER}
     style["order"] = merge_order(order)
-    style["blanks"] = (blanks_after_heading, blanks_before_section, blanks_after_section)
+    style["breaking_section"] = breaking
+    style["blanks"] = tuple(blanks)
     style["bullet"] = bullets[0].group(1) if bullets else "-"
     texts = [b.group(2) for b in bullets]
-    style["breaking_section"] = breaking
     plain = [PR_LINK_RE.sub("", PR_PLAIN_RE.sub("", t)).strip() for t in texts]
     style["bold"] = bool(texts) and sum(t.startswith("**") for t in texts) * 2 > len(texts)
     # Short labels ("Team invites.") get the entry title; sentences get the description.
@@ -162,9 +200,9 @@ def detect_style(text):
     # A link reference for the newest version ("[1.2.0]: https://.../compare/v1.1.0...v1.2.0").
     for i, line in enumerate(lines):
         m = LINK_REF_RE.match(line)
-        if m and VERSION_RE.search(m.group(1)) and VERSION_RE.search(m.group(1)).group(1) == latest:
-            ref = line.rstrip("\r\n")
-            ref = re.sub(ver % re.escape(latest), "{version}", ref)
+        v = VERSION_RE.search(m.group(1)) if m else None
+        if v and v.group(1) == latest:
+            ref = re.sub(ver % re.escape(latest), "{version}", line.rstrip("\r\n"))
             if prev:
                 ref = re.sub(ver % re.escape(prev), "{prev}", ref)
             style["link_ref"], style["link_ref_at"] = ref, i
@@ -207,26 +245,36 @@ def release_block(r, prev, style):
     heading = style["heading"].replace("{version}", r["version"]).replace("{date}", date)
     heading = heading.replace("{prev}", prev or r["version"])
     after_heading, before_section, after_section = style["blanks"]
-    out = [heading] + [""] * after_heading
+    out = [heading]
+    if style["underline"]:
+        out.append(style["underline"] * len(heading))
+    out += [""] * after_heading
     entries = r.get("entries", [])
-    groups = []
-    if style["breaking_section"]:
-        groups.append((style["breaking_section"], [e for e in entries if e.get("breaking")], True))
-        entries = [e for e in entries if not e.get("breaking")]
-    for t in style["order"]:
-        groups.append((style["sections"][t], [e for e in entries if e.get("type") == t], False))
-    first = True
-    for (prefix, label), items, is_breaking in groups:
-        if not items:
-            continue
-        if not first:
-            out += [""] * before_section
-        first = False
-        out.append("%s %s" % (prefix, label))
-        out += [""] * after_section
-        for e in items:
-            out += entry_lines(e, style, is_breaking)
-    out.append("")
+    if not style["sectioned"]:
+        # The file lists changes straight under each version: do the same.
+        for t in style["order"]:
+            for e in entries:
+                if e.get("type") == t:
+                    out += entry_lines(e, style)
+    else:
+        groups = []
+        if style["breaking_section"]:
+            groups.append((style["breaking_section"], [e for e in entries if e.get("breaking")], True))
+            entries = [e for e in entries if not e.get("breaking")]
+        for t in style["order"]:
+            groups.append((style["sections"][t], [e for e in entries if e.get("type") == t], False))
+        first = True
+        for (tpl, label), items, is_breaking in groups:
+            if not items:
+                continue
+            if not first:
+                out += [""] * before_section
+            first = False
+            out.append(tpl.replace("{label}", label))
+            out += [""] * after_section
+            for e in items:
+                out += entry_lines(e, style, is_breaking)
+    out += [""] * max(style["gap"], 1)
     return nl.join(out) + nl
 
 
@@ -236,7 +284,7 @@ def insert_releases(text, releases):
     if style is None:
         return text, [], ["no version sections found, so its format can't be matched; nothing was added"]
     latest = style["latest"]
-    present = {v for _, _, v in version_headings(text.splitlines(keepends=True))}
+    present = {h[2] for h in version_headings(text.splitlines(keepends=True))}
     new = sorted((r for r in releases if r.get("version") not in present and not r.get("yanked")
                   and semver_key(r["version"]) > semver_key(latest)),
                  key=lambda r: semver_key(r["version"]), reverse=True)

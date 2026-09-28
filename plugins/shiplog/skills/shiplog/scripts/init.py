@@ -22,7 +22,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL_DIR = os.path.dirname(HERE)
 CONFIG_FILE = ".shiplog.json"
 sys.path.insert(0, HERE)
-from _common import CONFIG_SCHEMA_URL, detect_project, detect_tag_prefix, find_root, is_generated  # noqa: E402
+from _common import (CONFIG_SCHEMA_URL, detect_project, detect_tag_prefix, find_changelog,  # noqa: E402
+                     find_root, is_generated)
 
 DEFAULT_AUDIENCES = [
     {"id": "end-users", "label": "End users"},
@@ -104,8 +105,9 @@ def main(argv=None):
         open(keep, "w").close()
     print("  releases go in %s/<version>.json" % app["releases_dir"])
     print("  app: %s (id %s), version tags look like %s1.2.3" % (name, app_id, prefix))
-    md = os.path.join(args.root, args.path, "CHANGELOG.md")
-    if os.path.exists(md) and not is_generated(md):
+    existing = find_changelog(os.path.join(args.root, args.path))
+    md = os.path.join(args.root, args.path, existing or "CHANGELOG.md")
+    if existing and not is_generated(md):
         print("  found a hand-written %s. Shiplog keeps it and adds each new release in the file's own\n"
               "  format, without changing existing entries. To show its history on the changelog page too, run\n"
               "    shiplog.py import --app %s" % (os.path.relpath(md, args.root), app_id))

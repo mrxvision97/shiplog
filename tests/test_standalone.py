@@ -65,6 +65,9 @@ class ForeignRepo(unittest.TestCase):
 
     def test_feature_branch_note_and_since(self):
         self.shiplog("init")
+        git(self.d, "checkout", "-qb", "8.2")  # release branches are fine
+        out = json.loads(self.shiplog("collect", "--full").stdout)
+        self.assertFalse(any("branch" in n for n in out["notes"]))
         git(self.d, "checkout", "-qb", "my-feature")
         out = json.loads(self.shiplog("collect", "--full").stdout)
         self.assertTrue(any("branch 'my-feature'" in n for n in out["notes"]))
@@ -136,6 +139,39 @@ class DetectTest(unittest.TestCase):
                 json.dump({"name": "web", "version": "0.1.0"}, f)  # starter defaults
             self.assertEqual(_common.detect_project(d), {"name": "flywheel"})
 
+    def test_major_ecosystems(self):
+        cases = {
+            "go": ({"go.mod": "module github.com/go-chi/chi/v5\n\ngo 1.22\n"}, {"name": "chi"}),
+            "maven": ({"pom.xml": "<project><parent><artifactId>oss-parent</artifactId><version>9</version>"
+                                  "</parent><artifactId>gson-parent</artifactId><version>2.14.1</version>"
+                                  "<name>Gson Parent</name><description>JSON for Java</description></project>"},
+                      {"name": "Gson", "description": "JSON for Java", "version": "2.14.1"}),
+            "gradle": ({"settings.gradle.kts": 'rootProject.name = "moshi-root"\n',
+                        "build.gradle.kts": 'version = "2.0.3"\n'}, {"name": "moshi", "version": "2.0.3"}),
+            "dotnet": ({"Polly.csproj": "<Project><PropertyGroup><PackageId>Polly</PackageId>"
+                                        "<VersionPrefix>8.8.1</VersionPrefix></PropertyGroup></Project>"},
+                       {"name": "Polly", "version": "8.8.1"}),
+            "php": ({"composer.json": json.dumps({"name": "guzzlehttp/guzzle", "description": "HTTP client"})},
+                    {"name": "guzzle", "description": "HTTP client"}),
+            "ruby": ({"sinatra.gemspec": 's.name = "sinatra"\ns.summary = "Classy web-development"\n'},
+                     {"name": "sinatra", "description": "Classy web-development"}),
+            "rust": ({"Cargo.toml": '[package]\nname = "ripgrep"\nversion = "15.2.1"\n'},
+                     {"name": "ripgrep", "version": "15.2.1"}),
+        }
+        for label, (files, want) in cases.items():
+            with self.subTest(label), tempfile.TemporaryDirectory() as d:
+                for name, text in files.items():
+                    with open(os.path.join(d, name), "w") as f:
+                        f.write(text)
+                self.assertEqual(_common.detect_project(d), want)
+
+    def test_changelog_file_names(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertIsNone(_common.find_changelog(d))
+            for name in ("NEWS", "HISTORY.md"):
+                open(os.path.join(d, name), "w").close()
+            self.assertEqual(_common.find_changelog(d), "HISTORY.md")
+
     def test_tag_prefix(self):
         with tempfile.TemporaryDirectory() as d:
             git(d, "init", "-q")
@@ -144,6 +180,11 @@ class DetectTest(unittest.TestCase):
             for t in ("release-1.0.0", "release-1.1.0", "v0.9.0", "nightly"):
                 git(d, "tag", t)
             self.assertEqual(_common.detect_tag_prefix(d), "release-")
+            # A project that moved from "4.18.2" to "v5.2.1" is read by its current style,
+            # and package tags in a monorepo don't outrank the product.
+            for t in ("4.17.0", "4.18.0", "4.18.2", "v5.2.1", "ignore-0.4.33"):
+                git(d, "tag", t)
+            self.assertEqual(_common.detect_tag_prefix(d), "v")
 
 
 class InstallTest(unittest.TestCase):

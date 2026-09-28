@@ -328,7 +328,9 @@ def collect(app, root=".", from_ref=None, to_ref="HEAD", use_gh=True, since=None
             branch = git(["rev-parse", "--abbrev-ref", "HEAD"], root).strip()
         except RuntimeError:
             branch = ""
-        if branch and branch not in ("main", "master", "trunk", "develop", "HEAD") and not branch.startswith("release"):
+        release_branch = re.match(r"^(v?\d+(\.(\d+|x))*(\.x)?|(release|releases|stable|hotfix|support)([/-].*)?)$",
+                                  branch)
+        if branch and branch not in ("main", "master", "trunk", "develop", "HEAD") and not release_branch:
             notes.append("You're on branch '%s', so this includes unreleased work. Releases usually come from "
                          "the main branch: pass --to main (or origin/main)." % branch)
     if not last_tag:

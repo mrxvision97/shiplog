@@ -10,11 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **A changelog page like the best product teams publish**
 
-The page now reads like Linear's or Raycast's changelog, and Shiplog adds new releases to your existing CHANGELOG.md in its own format.
+The page now reads like Linear's or Raycast's changelog, and Shiplog adds new releases to your existing changelog in its own format, in any major language.
 
 ### Added
 
 - **New releases added to your existing CHANGELOG.md** — If your repository already has a hand-written CHANGELOG.md, Shiplog now adds each new release above the newest one, in the same format: the same headings, date style, section names, bullets and pull request links. It works with Keep a Changelog, conventional-changelog and custom formats. Existing entries are never changed, and a release is never added twice.
+  - Affects: People using the skill in Claude Code
+- **Tested across the major programming languages** — Shiplog now detects your project from package.json, pyproject.toml, go.mod, pom.xml, Gradle settings, .NET project files, composer.json, gemspecs and Cargo.toml. It finds changelogs named HISTORY.md, CHANGES or NEWS, understands underlined headings, label-style sections and changelogs without sections, and reads tag styles like 4.18.2 turning into v5.2.1. Tested on real JavaScript, TypeScript, Python, Go, Java, Kotlin, C#, PHP, Ruby and Rust projects.
   - Affects: People using the skill in Claude Code
 - **Headlines, highlights and images in release files** — Release files can now have a title headline, a longer intro, a hero image, and entries marked as highlights with their own screenshot. All are optional; existing release files keep working, and new features are highlighted automatically.
   - Affects: People using the skill in Claude Code, Shiplog contributors
