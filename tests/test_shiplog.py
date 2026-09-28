@@ -167,6 +167,34 @@ class ShiplogTest(unittest.TestCase):
         self.write_release({"version": "1.1.0", "date": "nope", "entries": []})
         self.assertNotEqual(run("render.py", cwd=self.d).returncode, 0)
 
+    def test_render_is_deterministic(self):
+        """Re-rendering unchanged data on another day must be byte-identical."""
+        self.write_release(GOOD_RELEASE)
+        out = os.path.join(self.d, "changelog", "demo")
+        # Run render.py with datetime.date.today() faked to two different days.
+        shim = ("import datetime, runpy, sys\n"
+                "real = datetime.date\n"
+                "class D(real):\n"
+                "    @classmethod\n"
+                "    def today(cls): return real(2030, 1, DAY)\n"
+                "DAY = int(sys.argv.pop())\n"
+                "datetime.date = D\n"
+                "sys.argv = sys.argv[1:]\n"
+                "runpy.run_path(sys.argv[0], run_name='__main__')\n")
+        snapshots = []
+        for day in ("1", "2"):
+            r = subprocess.run([PY, "-c", shim, os.path.join(SCRIPTS, "render.py"), "--internal", day],
+                               cwd=self.d, capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            snap = {}
+            for name in sorted(os.listdir(out)) + ["../../CHANGELOG.md"]:
+                with open(os.path.join(out, name), "rb") as f:
+                    snap[name] = f.read()
+            snapshots.append(snap)
+        self.assertEqual(snapshots[0], snapshots[1])
+        self.assertNotIn(b"2030", snapshots[0]["index.html"])
+        self.assertIn(b"2026-09-28", snapshots[0]["index.html"])
+
     def test_vendored_scripts_work(self):
         self.write_release(GOOD_RELEASE)
         vend = os.path.join(self.d, ".shiplog", "scripts")

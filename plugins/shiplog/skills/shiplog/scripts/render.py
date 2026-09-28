@@ -15,13 +15,13 @@ import html
 import json
 import os
 import re
-import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from _common import (ENTRY_TYPES, TYPE_LABELS, audience_label, load_config,  # noqa: E402
                      load_releases, select_app)
+import validate  # noqa: E402
 
 PROJECT_URL = "https://github.com/YOUR_ORG/shiplog"  # set to your fork's URL
 TEMPLATE_CANDIDATES = [
@@ -30,6 +30,7 @@ TEMPLATE_CANDIDATES = [
 ]
 PUBLIC_ENTRY_KEYS = ["type", "title", "description", "audiences", "action_required", "action",
                      "action_deadline", "breaking", "links"]
+SAFE_URL_RE = re.compile(r"^https?://", re.I)
 URL_RE = re.compile(r"(https?://[^\s<>\"']+[^\s<>\"'.,;:!?)])")
 
 
@@ -110,6 +111,7 @@ def render_entry(e, app, internal):
         parts.append('<div class="action-box"><strong>What you need to do</strong>%s%s</div>'
                      % (text_to_html(e.get("action")), dl))
     links = e.get("links") or []
+    links = [ln for ln in links if isinstance(ln, dict) and SAFE_URL_RE.match(str(ln.get("url", "")))]
     if links:
         parts.append('<p class="links">%s</p>' % " ".join(
             '<a href="%s">%s</a>' % (esc(ln["url"]), esc(ln["label"])) for ln in links))
@@ -177,7 +179,9 @@ def render_html(app, releases, internal):
         "type_filters": type_filters,
         "audience_options": audience_options,
         "releases": body,
-        "generated": datetime.date.today().isoformat(),
+        # The latest release date, never today's: re-rendering unchanged data is byte-identical.
+        "updated": ('Last release <time datetime="%s">%s</time>. ' % (esc(releases[0].get("date")),
+                    fmt_date(releases[0].get("date")))) if releases else "",
         "project_url": esc(app.get("project_url", PROJECT_URL)),
     }
     out = load_template()
@@ -234,7 +238,7 @@ def render_markdown(app, releases):
 def render_atom(app, releases):
     base = app.get("base_url", "").rstrip("/")
     feed_id = base + "/" if base else "urn:shiplog:%s" % app["id"]
-    updated = (releases[0]["date"] if releases else datetime.date.today().isoformat()) + "T00:00:00Z"
+    updated = (releases[0]["date"] if releases else "1970-01-01") + "T00:00:00Z"
     out = ['<?xml version="1.0" encoding="utf-8"?>',
            '<feed xmlns="http://www.w3.org/2005/Atom">',
            "<title>%s changelog</title>" % esc(app["name"]),
@@ -315,21 +319,18 @@ def render_app(app, root, internal):
         write(os.path.join(root, md_path), render_markdown(app, releases))
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--app")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--internal", action="store_true", help="also write internal.html with internal notes")
     ap.add_argument("--skip-validate", action="store_true")
     ap.add_argument("--root", default=".")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
     cfg = load_config(args.root)
     apps = cfg["apps"] if args.all else [select_app(cfg, args.app)]
     if not args.skip_validate:
-        cmd = [sys.executable, os.path.join(HERE, "validate.py"), "--root", args.root]
-        cmd += ["--all"] if args.all else (["--app", apps[0]["id"]] if args.app else [])
-        r = subprocess.run(cmd)
-        if r.returncode != 0:
+        if sum(validate.validate_app(a, args.root, None, False) for a in apps):
             sys.exit("shiplog: validation failed; fix errors before rendering (or --skip-validate)")
     for app in apps:
         render_app(app, args.root, args.internal)

@@ -103,6 +103,6 @@ Tell the user briefly what was written, where, and the suggested next steps. For
 ## Other tasks
 
 - **Edit a past release:** edit its JSON, then validate and render again. Never edit generated files directly. They get overwritten.
-- **Import an existing CHANGELOG.md:** convert each version into a release JSON. Existing entries usually lack audiences and actions. Use `everyone` + `action_required: false` only where that's clearly true. Otherwise ask, or tell the user which entries need review.
+- **Import an existing CHANGELOG.md:** run `python SCRIPTS/import_changelog.py --app <id>` (`--dry-run` first). Every entry gets `everyone`, `action_required: false` and `_needs_review: true`, and the validator warns about each one. Review them with the user, fix the impact fields, and delete the flag.
 - **Change the look of the page:** set `theme` in the config (`accent_color`, `logo_url`) as described in `references/config.md`. For deeper changes, edit `assets/templates/page.html`. It uses `{{placeholders}}` filled by `render.py`.
 - **CI check on release:** the workflow from `init.py --with-ci` fails a tag build if the matching release file is missing or invalid (`validate.py --require-version <version>`).

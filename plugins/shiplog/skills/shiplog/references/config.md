@@ -44,6 +44,7 @@ Lives at the repo root. It holds either a single app object, or `{"apps": [...]}
 | `theme.accent_color` | `#4f46e5` | Hex color for link underlines and controls. A contrast warning prints if it's too low. |
 | `theme.logo_url` | none | Logo shown in the header. |
 | `project_url` | Shiplog repo | Footer link target. |
+| `allowed_terms` | `[]` | Words the jargon check accepts, e.g. a product called "Hotfix Hub". Capitalized mid-sentence words are already treated as names. |
 
 ## Choosing audiences
 

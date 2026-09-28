@@ -19,6 +19,8 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL_DIR = os.path.dirname(HERE)
 CONFIG_FILE = ".shiplog.json"
+sys.path.insert(0, HERE)
+from _common import CONFIG_SCHEMA_URL  # noqa: E402
 
 DEFAULT_AUDIENCES = [
     {"id": "end-users", "label": "End users"},
@@ -32,7 +34,7 @@ def slugify(s):
     return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-") or "app"
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--name", required=True)
     ap.add_argument("--id")
@@ -42,7 +44,7 @@ def main():
     ap.add_argument("--with-ci", action="store_true")
     ap.add_argument("--root", default=".")
     ap.add_argument("--force", action="store_true", help="overwrite existing vendored files")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     app_id = args.id or slugify(args.name)
     cfg_path = os.path.join(args.root, CONFIG_FILE)
@@ -68,14 +70,14 @@ def main():
             print("shiplog: app '%s' already in %s; leaving config unchanged" % (app_id, CONFIG_FILE))
         else:
             apps.append(app)
-            cfg = {"apps": apps}
+            cfg = {"$schema": cfg.get("$schema", CONFIG_SCHEMA_URL), "apps": apps}
             with open(cfg_path, "w", encoding="utf-8") as f:
                 json.dump(cfg, f, indent=2)
                 f.write("\n")
             print("  added app '%s' to %s" % (app_id, cfg_path))
     else:
         with open(cfg_path, "w", encoding="utf-8") as f:
-            json.dump({"apps": [app]}, f, indent=2)
+            json.dump({"$schema": CONFIG_SCHEMA_URL, "apps": [app]}, f, indent=2)
             f.write("\n")
         print("  wrote %s" % cfg_path)
 
@@ -89,7 +91,7 @@ def main():
     if args.with_ci:
         vend = os.path.join(args.root, ".shiplog", "scripts")
         os.makedirs(vend, exist_ok=True)
-        for name in ("_common.py", "validate.py", "render.py", "collect_changes.py"):
+        for name in sorted(n for n in os.listdir(HERE) if n.endswith(".py")):
             dst = os.path.join(vend, name)
             if os.path.exists(dst) and not args.force:
                 print("  exists, skipped %s (use --force to update)" % dst)

@@ -15,6 +15,10 @@ TYPE_LABELS = {
     "security": "Security",
 }
 EVERYONE = "everyone"
+# Replace YOUR_ORG with your fork so editors can fetch the schemas.
+SCHEMA_BASE_URL = "https://raw.githubusercontent.com/YOUR_ORG/shiplog/main/plugins/shiplog/skills/shiplog/schema/"
+RELEASE_SCHEMA_URL = SCHEMA_BASE_URL + "release.schema.json"
+CONFIG_SCHEMA_URL = SCHEMA_BASE_URL + "config.schema.json"
 
 SEMVER_RE = re.compile(
     r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
@@ -116,7 +120,8 @@ def load_releases(app, root="."):
     if not os.path.isdir(rdir):
         return releases, errors
     for name in sorted(os.listdir(rdir)):
-        if not name.endswith(".json"):
+        # Dotfiles (e.g. .notified.json) hold Shiplog state, not releases.
+        if not name.endswith(".json") or name.startswith("."):
             continue
         path = os.path.join(rdir, name)
         try:
@@ -132,3 +137,12 @@ def load_releases(app, root="."):
         releases.append(data)
     releases.sort(key=lambda r: semver_key(str(r.get("version", ""))), reverse=True)
     return releases, errors
+
+
+def app_for_tag(cfg, tag):
+    """The app whose tag_prefix matches TAG (longest prefix wins), or None."""
+    matches = [a for a in cfg["apps"] if tag.startswith(a.get("tag_prefix", "v"))
+               and parse_semver(tag[len(a.get("tag_prefix", "v")):])]
+    if not matches:
+        return None
+    return max(matches, key=lambda a: len(a.get("tag_prefix", "v")))

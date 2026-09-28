@@ -1,0 +1,117 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/YOUR_ORG/shiplog/main/plugins/shiplog/skills/shiplog/schema/config.schema.json",
+  "title": "Shiplog config (.shiplog.json)",
+  "description": "Either {\"apps\": [...]} or a single app object.",
+  "type": "object",
+  "anyOf": [
+    {
+      "required": [
+        "apps"
+      ],
+      "properties": {
+        "$schema": {
+          "type": "string"
+        },
+        "apps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/app"
+          }
+        }
+      }
+    },
+    {
+      "$ref": "#/definitions/app"
+    }
+  ],
+  "definitions": {
+    "app": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "description": "Short slug used in --app and default paths."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string",
+          "description": "Directory whose commits belong to this app. Default '.'."
+        },
+        "tag_prefix": {
+          "type": "string",
+          "description": "Tags look like <prefix><version>. Default 'v'."
+        },
+        "releases_dir": {
+          "type": "string"
+        },
+        "output_dir": {
+          "type": "string"
+        },
+        "base_url": {
+          "type": "string"
+        },
+        "changelog_md": {
+          "type": [
+            "boolean",
+            "string"
+          ]
+        },
+        "lang": {
+          "type": "string"
+        },
+        "project_url": {
+          "type": "string"
+        },
+        "allowed_terms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Words the jargon check should accept, e.g. product names."
+        },
+        "audiences": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "theme": {
+          "type": "object",
+          "properties": {
+            "accent_color": {
+              "type": "string",
+              "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$"
+            },
+            "logo_url": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

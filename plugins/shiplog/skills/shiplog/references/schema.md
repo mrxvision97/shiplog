@@ -6,6 +6,7 @@ One file per release: `<releases_dir>/<version>.json`. The file name must equal 
 
 | Field | Required | Notes |
 |---|---|---|
+| `$schema` | no | Points editors at `schema/release.schema.json` for autocomplete. Ignored by the scripts. |
 | `version` | yes | SemVer, e.g. `2.4.0`, `3.0.0-beta.1`. No `v` prefix. |
 | `date` | yes | `YYYY-MM-DD`, the day it reached users. |
 | `summary` | no | One-line headline, under 120 chars. Shown under the version and in the feed title. |
@@ -27,13 +28,19 @@ One file per release: `<releases_dir>/<version>.json`. The file name must equal 
 | `links` | no | yes | `[{"label": "Migration guide", "url": "https://..."}]` |
 | `internal_notes` | no | **internal only** | Support talking points, known issues, rollback, flag names. |
 | `refs` | no | **internal only** | PR numbers, ticket IDs, commit SHAs. |
+| `_needs_review` | no | never shown | Set by `import_changelog.py`. The validator warns until you confirm `audiences` and `action_required` and delete it. |
 
 Fields marked internal only appear only in `internal.html` and `changelog.internal.json` (rendered with `--internal`).
+
+## JSON Schema
+
+`schema/release.schema.json` and `schema/config.schema.json` give editors autocomplete and basic checks. `validate.py` is the source of truth: it also checks audiences against the config, jargon, deadlines and more.
 
 ## Full example
 
 ```json
 {
+  "$schema": "https://raw.githubusercontent.com/YOUR_ORG/shiplog/main/plugins/shiplog/skills/shiplog/schema/release.schema.json",
   "version": "3.0.0",
   "date": "2026-10-01",
   "summary": "New API authentication and saved filters",
