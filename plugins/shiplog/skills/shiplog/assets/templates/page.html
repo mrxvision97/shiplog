@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="{{lang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{page_title}}</title>
+<meta name="description" content="{{meta_description}}">
+{{robots}}
+<link rel="alternate" type="application/atom+xml" title="{{app_name}} changelog (Atom)" href="feed.xml">
+<link rel="alternate" type="application/json" title="{{app_name}} changelog (JSON)" href="changelog.json">
+<style>
+:root {
+  --bg: #ffffff; --fg: #1a1a1f; --muted: #52525b; --border: #e4e4e7; --surface: #f7f7f8;
+  --accent: {{accent}}; --accent-fg: {{accent_fg}};
+  --warn-bg: #fff4e5; --warn-fg: #7a3e00; --warn-border: #f0b060;
+  --danger-bg: #fdecec; --danger-fg: #8a1c1c; --danger-border: #eaa0a0;
+  --focus: #1d4ed8;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111114; --fg: #ececf1; --muted: #a1a1aa; --border: #2e2e35; --surface: #1a1a1f;
+    --warn-bg: #3a2708; --warn-fg: #ffd9a8; --warn-border: #8a5a14;
+    --danger-bg: #3b1212; --danger-fg: #ffc9c9; --danger-border: #8a2e2e;
+    --focus: #93b4ff;
+  }
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { font-size: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg);
+  font: 1rem/1.6 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+a { color: inherit; text-decoration-color: var(--accent); text-underline-offset: 2px; text-decoration-thickness: 2px; }
+a:hover { text-decoration-thickness: 3px; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
+.skip { position: absolute; left: -9999px; top: 0; background: var(--fg); color: var(--bg); padding: .5rem 1rem; z-index: 10; }
+.skip:focus { left: 1rem; top: 1rem; }
+.wrap { max-width: 46rem; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+header.site { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; border-bottom: 1px solid var(--border); padding-bottom: 1.25rem; margin-bottom: 1.5rem; }
+header.site img { height: 2rem; width: auto; }
+header.site h1 { font-size: 1.6rem; line-height: 1.2; margin: 0; }
+header.site p { margin: .25rem 0 0; color: var(--muted); width: 100%; }
+.subscribe { font-size: .95rem; color: var(--muted); }
+.banner { background: var(--danger-bg); color: var(--danger-fg); border: 1px solid var(--danger-border); padding: .75rem 1rem; border-radius: .5rem; margin-bottom: 1.5rem; }
+form.filters { background: var(--surface); border: 1px solid var(--border); border-radius: .75rem; padding: 1rem; margin-bottom: 2rem; }
+form.filters fieldset { border: 0; margin: 0 0 .75rem; padding: 0; }
+form.filters legend { font-weight: 600; margin-bottom: .35rem; padding: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: .5rem 1rem; }
+.chips label, .inline { display: inline-flex; align-items: center; gap: .35rem; cursor: pointer; }
+input[type=checkbox] { width: 1.1rem; height: 1.1rem; accent-color: var(--accent); }
+select, input[type=search] { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--muted); border-radius: .4rem; padding: .35rem .5rem; min-height: 2.5rem; }
+.row { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; align-items: center; }
+.row label.stack { display: flex; flex-direction: column; gap: .2rem; font-weight: 600; }
+#result-count { margin: .75rem 0 0; color: var(--muted); font-size: .95rem; }
+article.release { border-bottom: 1px solid var(--border); padding: 0 0 2rem; margin: 0 0 2rem; }
+article.release > header h2 { font-size: 1.4rem; margin: 0; display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
+article.release > header h2 a { text-decoration: none; }
+article.release > header h2 a:hover { text-decoration: underline; }
+article.release time { color: var(--muted); font-size: 1rem; font-weight: 400; }
+.summary { margin: .35rem 0 0; font-size: 1.05rem; }
+.yanked { color: var(--danger-fg); font-weight: 600; }
+section.group h3 { font-size: 1rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 1.5rem 0 .5rem; }
+ul.entries { list-style: none; margin: 0; padding: 0; }
+li.entry { padding: .85rem 0; border-top: 1px solid var(--border); }
+li.entry:first-child { border-top: 0; }
+.entry h4 { font-size: 1.05rem; margin: 0 0 .25rem; }
+.entry p { margin: .25rem 0; }
+.badges { display: inline-flex; gap: .4rem; flex-wrap: wrap; margin-left: .25rem; vertical-align: middle; }
+.badge { font-size: .78rem; font-weight: 700; padding: .1rem .5rem; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+.badge.breaking { background: var(--danger-bg); color: var(--danger-fg); border-color: var(--danger-border); }
+.badge.action { background: var(--warn-bg); color: var(--warn-fg); border-color: var(--warn-border); }
+.meta { color: var(--muted); font-size: .95rem; }
+.action-box { background: var(--warn-bg); color: var(--warn-fg); border-left: 4px solid var(--warn-border); padding: .6rem .85rem; border-radius: .35rem; margin: .5rem 0; }
+.action-box strong { display: block; }
+.links { display: flex; gap: 1rem; flex-wrap: wrap; font-size: .95rem; margin-top: .35rem; }
+details.internal { margin-top: .5rem; background: var(--surface); border: 1px dashed var(--muted); border-radius: .4rem; padding: .5rem .75rem; font-size: .95rem; }
+details.internal summary { cursor: pointer; font-weight: 600; }
+footer.site { color: var(--muted); font-size: .9rem; }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+@media print { form.filters, .skip, .subscribe { display: none; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to changelog</a>
+<div class="wrap">
+<header class="site">
+  {{logo}}
+  <h1>{{heading}}</h1>
+  <p>{{intro}}</p>
+  <p class="subscribe">Follow updates: <a href="feed.xml">Atom/RSS feed</a> · <a href="changelog.json">JSON</a></p>
+</header>
+{{internal_banner}}
+<form class="filters" id="filters" hidden aria-labelledby="filters-heading">
+  <h2 id="filters-heading" style="font-size:1.1rem;margin:0 0 .75rem">Filter changes</h2>
+  <fieldset>
+    <legend>Type of change</legend>
+    <div class="chips">{{type_filters}}</div>
+  </fieldset>
+  <div class="row">
+    <label class="stack" for="f-audience">Affects
+      <select id="f-audience" name="audience">
+        <option value="">Anyone</option>
+        {{audience_options}}
+      </select>
+    </label>
+    <label class="stack" for="f-search">Search
+      <input type="search" id="f-search" name="q" autocomplete="off">
+    </label>
+    <label class="inline"><input type="checkbox" id="f-action" name="action"> Action required only</label>
+  </div>
+  <p id="result-count" role="status" aria-live="polite"></p>
+</form>
+<main id="main">
+{{releases}}
+</main>
+<footer class="site">
+  <p>Generated {{generated}} by <a href="{{project_url}}">Shiplog</a>.</p>
+</footer>
+</div>
+<script>
+(function () {
+  var form = document.getElementById('filters');
+  if (!form || !document.querySelector) return;
+  form.hidden = false;
+  var entries = Array.prototype.slice.call(document.querySelectorAll('li.entry'));
+  var groups = Array.prototype.slice.call(document.querySelectorAll('section.group'));
+  var releases = Array.prototype.slice.call(document.querySelectorAll('article.release'));
+  var count = document.getElementById('result-count');
+  function apply() {
+    var types = Array.prototype.slice.call(form.querySelectorAll('input[name=type]:checked')).map(function (i) { return i.value; });
+    var aud = form.audience.value;
+    var onlyAction = form.action.checked;
+    var q = form.q.value.trim().toLowerCase();
+    var shown = 0;
+    entries.forEach(function (li) {
+      var ok = types.indexOf(li.dataset.type) !== -1;
+      if (ok && aud) { var a = li.dataset.audiences.split(' '); ok = a.indexOf(aud) !== -1 || a.indexOf('everyone') !== -1; }
+      if (ok && onlyAction) ok = li.dataset.action === 'true';
+      if (ok && q) ok = li.textContent.toLowerCase().indexOf(q) !== -1;
+      li.hidden = !ok; if (ok) shown++;
+    });
+    groups.forEach(function (g) { g.hidden = !g.querySelector('li.entry:not([hidden])'); });
+    releases.forEach(function (r) { r.hidden = !r.querySelector('li.entry:not([hidden])'); });
+    count.textContent = shown === entries.length ? 'Showing all ' + shown + ' changes.' : 'Showing ' + shown + ' of ' + entries.length + ' changes.';
+  }
+  form.addEventListener('input', apply);
+  form.addEventListener('change', apply);
+  form.addEventListener('submit', function (e) { e.preventDefault(); });
+  apply();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "shiplog",
+  "version": "0.1.0",
+  "description": "Write structured, plain-language changelogs (what changed, who is affected, what action to take) and publish an accessible changelog page, Atom feed and CHANGELOG.md.",
+  "author": { "name": "YOUR_NAME" },
+  "homepage": "https://github.com/YOUR_ORG/shiplog",
+  "repository": "https://github.com/YOUR_ORG/shiplog",
+  "license": "MIT",
+  "keywords": ["changelog", "release-notes", "semver", "keep-a-changelog"]
+}

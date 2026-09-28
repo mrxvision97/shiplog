@@ -1,0 +1,36 @@
+{
+  "apps": [
+    {
+      "id": "web",
+      "name": "Acme Web",
+      "description": "",
+      "path": ".",
+      "tag_prefix": "v",
+      "releases_dir": ".changelog/web",
+      "output_dir": "changelog/web",
+      "base_url": "https://acme.com/changelog/web",
+      "changelog_md": true,
+      "audiences": [
+        {
+          "id": "end-users",
+          "label": "End users"
+        },
+        {
+          "id": "admins",
+          "label": "Account admins"
+        },
+        {
+          "id": "developers",
+          "label": "API & integration developers"
+        },
+        {
+          "id": "support",
+          "label": "Support team"
+        }
+      ],
+      "theme": {
+        "accent_color": "#4f46e5"
+      }
+    }
+  ]
+}

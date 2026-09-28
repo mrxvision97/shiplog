@@ -1,0 +1,10 @@
+{
+  "version": "2.0.0",
+  "date": "2026-09-28",
+  "summary": "Bigger exports, fewer duplicate emails",
+  "entries": [
+    {"type":"added","title":"Export up to 50,000 rows at once","description":"Large CSV exports from the Reports page now complete in one step. The previous limit was 5,000 rows.","audiences":["admins"],"action_required":false,"refs":["#412"]},
+    {"type":"fixed","title":"Fixed duplicate \"invoice paid\" emails","description":"Some customers received the same payment confirmation two or three times. Each payment now sends exactly one email.","audiences":["end-users"],"action_required":false,"internal_notes":"Affected accounts: webhook retries between Sep 1-20. Safe to tell customers it's resolved.","refs":["PROJ-881"]},
+    {"type":"changed","title":"Older mobile app versions can no longer sign in","description":"To keep accounts secure, versions of the mobile app older than 4.2 can no longer sign in.","audiences":["end-users","support"],"action_required":true,"action":"Update the Acme app from the App Store or Google Play to version 4.2 or later.","breaking":true,"links":[{"label":"Supported versions","url":"https://acme.com/help/mobile-versions"}]}
+  ]
+}
