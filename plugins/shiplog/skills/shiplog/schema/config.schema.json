@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/YOUR_ORG/shiplog/main/plugins/shiplog/skills/shiplog/schema/config.schema.json",
+  "$id": "https://raw.githubusercontent.com/mrxvision97/shiplog/main/plugins/shiplog/skills/shiplog/schema/config.schema.json",
   "title": "Shiplog config (.shiplog.json)",
   "description": "Either {\"apps\": [...]} or a single app object.",
   "type": "object",

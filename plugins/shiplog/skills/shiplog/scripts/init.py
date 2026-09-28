@@ -2,11 +2,13 @@
 """Set up Shiplog in a repository.
 
 Usage:
-  init.py --name "Acme Web" [--id web] [--path .] [--tag-prefix v]
+  init.py [--name "Acme Web"] [--id web] [--path .] [--tag-prefix v]
           [--base-url https://acme.com/changelog] [--with-ci] [--root DIR] [--force]
 
-Creates .shiplog.json (or adds an app to an existing multi-app config) and the
-releases directory. --with-ci vendors the scripts into .shiplog/scripts/ and
+Creates .shiplog.json at the repo root (or adds an app to an existing multi-app
+config) and the releases directory. Without --name, the name and description
+come from package.json, pyproject.toml, Cargo.toml, go.mod, the git remote or the
+folder name. Without --tag-prefix, the prefix of existing version tags is used. --with-ci vendors the scripts into .shiplog/scripts/ and
 writes .github/workflows/shiplog.yml so CI works without Claude installed.
 """
 import argparse
@@ -20,7 +22,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL_DIR = os.path.dirname(HERE)
 CONFIG_FILE = ".shiplog.json"
 sys.path.insert(0, HERE)
-from _common import CONFIG_SCHEMA_URL  # noqa: E402
+from _common import CONFIG_SCHEMA_URL, detect_project, detect_tag_prefix, find_root, is_generated  # noqa: E402
 
 DEFAULT_AUDIENCES = [
     {"id": "end-users", "label": "End users"},
@@ -34,26 +36,40 @@ def slugify(s):
     return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-") or "app"
 
 
+def humanize(name):
+    """acme-dashboard -> Acme Dashboard; leaves names with capitals alone."""
+    if name != name.lower():
+        return name
+    return " ".join(w.capitalize() for w in re.split(r"[-_\s]+", name) if w) or name
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--name", required=True)
+    ap.add_argument("--name", help="display name (default: detected from the project)")
     ap.add_argument("--id")
     ap.add_argument("--path", default=".")
     ap.add_argument("--tag-prefix", default=None)
     ap.add_argument("--base-url", default="")
     ap.add_argument("--with-ci", action="store_true")
-    ap.add_argument("--root", default=".")
+    ap.add_argument("--root", help="repo root (default: found from the current folder)")
     ap.add_argument("--force", action="store_true", help="overwrite existing vendored files")
     args = ap.parse_args(argv)
+    args.root = find_root(args.root)
 
-    app_id = args.id or slugify(args.name)
+    project = detect_project(os.path.join(args.root, args.path))
+    name = args.name or humanize(project["name"])
+    app_id = args.id or slugify(args.name or project["name"])
+    prefix = args.tag_prefix
+    if prefix is None:
+        detected = detect_tag_prefix(args.root) if args.path == "." else None
+        prefix = detected if detected is not None else ("v" if args.path == "." else app_id + "-v")
     cfg_path = os.path.join(args.root, CONFIG_FILE)
     app = {
         "id": app_id,
-        "name": args.name,
-        "description": "",
+        "name": name,
+        "description": project.get("description", ""),
         "path": args.path,
-        "tag_prefix": args.tag_prefix if args.tag_prefix is not None else ("v" if args.path == "." else app_id + "-v"),
+        "tag_prefix": prefix,
         "releases_dir": os.path.join(".changelog", app_id).replace(os.sep, "/"),
         "output_dir": os.path.join("changelog", app_id).replace(os.sep, "/"),
         "base_url": args.base_url,
@@ -87,6 +103,11 @@ def main(argv=None):
     if not os.listdir(rdir):
         open(keep, "w").close()
     print("  releases go in %s/<version>.json" % app["releases_dir"])
+    print("  app: %s (id %s), version tags look like %s1.2.3" % (name, app_id, prefix))
+    md = os.path.join(args.root, args.path, "CHANGELOG.md")
+    if os.path.exists(md) and not is_generated(md):
+        print("  found a hand-written %s. Shiplog won't overwrite it. To bring its history in, run\n"
+              "    shiplog.py import --app %s" % (os.path.relpath(md, args.root), app_id))
 
     if args.with_ci:
         vend = os.path.join(args.root, ".shiplog", "scripts")

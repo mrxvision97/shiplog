@@ -16,7 +16,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import RELEASE_SCHEMA_URL, die, load_config, parse_semver, select_app  # noqa: E402
+from _common import RELEASE_SCHEMA_URL, die, find_root, load_config, parse_semver, select_app  # noqa: E402
 
 VERSION_RE = re.compile(r"^##\s+\[?v?(?P<version>[0-9][^\]\s]*)\]?(?:\([^)]*\))?\s*"
                         r"(?:[-–—]\s*|\(\s*)?(?P<date>\d{4}-\d{2}-\d{2})?\)?\s*(?P<rest>.*)$")
@@ -118,8 +118,9 @@ def main(argv=None):
     ap.add_argument("--file", help="CHANGELOG.md to import (default: <app path>/CHANGELOG.md)")
     ap.add_argument("--force", action="store_true", help="overwrite existing release files")
     ap.add_argument("--dry-run", action="store_true", help="print what would be written")
-    ap.add_argument("--root", default=".")
+    ap.add_argument("--root", help="repo root (default: found from the current folder)")
     args = ap.parse_args(argv)
+    args.root = find_root(args.root)
     app = select_app(load_config(args.root), args.app)
     src = args.file or os.path.join(args.root, app.get("path", "."), "CHANGELOG.md")
     if not os.path.exists(src):

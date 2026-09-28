@@ -15,7 +15,7 @@ and labels are fetched in one batched GraphQL call. Skipped silently otherwise,
 or with --no-gh / SHIPLOG_NO_GH=1.
 
 Usage:
-  collect_changes.py [--app ID] [--from REF] [--to REF] [--full] [--no-gh] [--root DIR]
+  collect_changes.py [--app ID] [--from REF | --since DATE] [--to REF] [--full] [--no-gh] [--root DIR]
 """
 import argparse
 import json
@@ -26,8 +26,8 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import (NOT_TICKETS, die, load_config, load_releases, parse_semver,  # noqa: E402
-                     select_app, semver_key)
+from _common import (NOT_TICKETS, detect_project, die, find_root, load_config,  # noqa: E402
+                     load_releases, parse_semver, select_app, semver_key, semver_tags)
 
 CC_RE = re.compile(r"^(?P<type>[a-zA-Z]+)(?:\((?P<scope>[^)]+)\))?(?P<bang>!)?:\s*(?P<subject>.+)$")
 REF_RE = re.compile(r"(?<![\w/])#(\d+)\b")
@@ -44,6 +44,8 @@ SEP = "\x1e"  # record separator
 FSEP = "\x1f"  # field separator
 LOG_FORMAT = "--format=" + SEP + FSEP.join(["%H", "%P", "%an", "%ad", "%s", "%b"])
 PR_BODY_MAX = 500
+BIG_RANGE = 60  # more changes than this without a starting point: ask where the release starts
+SUMMARY_MAX = 150  # summary lines per section; --full has everything
 GH_MAX_PRS = 100
 SHALLOW_HINT = ("In GitHub Actions set `fetch-depth: 0` on actions/checkout; "
                 "locally run `git fetch --unshallow --tags`.")
@@ -155,7 +157,7 @@ def merge_pr_number(merge):
     return None
 
 
-def pr_members(root, rng):
+def pr_members(root, rng, limit=()):
     """Map commit sha -> (pr ref, merge commit) for commits brought in by PR merges.
 
     Walks the first-parent (mainline) history oldest first. Each merge owns the
@@ -163,12 +165,12 @@ def pr_members(root, rng):
     Two git calls in total, however many PRs there are.
     """
     graph = {}
-    for line in git(["rev-list", "--parents", rng], root).splitlines():
+    for line in git(["rev-list", "--parents", rng] + list(limit), root).splitlines():
         shas = line.split()
         if shas:
             graph[shas[0]] = shas[1:]
-    mainline = list(reversed(git(["rev-list", "--first-parent", rng], root).split()))
-    merges = {m["sha"]: m for m in read_log(root, [rng, "--merges", "--first-parent"])}
+    mainline = list(reversed(git(["rev-list", "--first-parent", rng] + list(limit), root).split()))
+    merges = {m["sha"]: m for m in read_log(root, [rng, "--merges", "--first-parent"] + list(limit))}
     owner, seen = {}, set()
     for sha in mainline:
         seen.add(sha)
@@ -261,8 +263,17 @@ def gh_enrich(changes, root):
         node = repo.get("p" + (c.get("pr") or "")[1:]) if (c.get("pr") or "").startswith("#") else None
         if not node:
             continue
-        body = " ".join((node.get("body") or "").split())
-        c["pr_title"] = node.get("title") or ""
+        body = re.sub(r"```.*?```|<!--.*?-->", " ", node.get("body") or "", flags=re.S)
+        body = re.sub(r"^\s*(#+|---+|[-*]\s*\[[ x]\])\s*", "", body, flags=re.M)
+        body = " ".join(body.replace("`", "").replace("**", "").split())
+        title = node.get("title") or ""
+        m = CC_RE.match(title)
+        if m:
+            title = m.group("subject").strip()
+            if c["type"] == "other":
+                c["type"], c["scope"] = m.group("type").lower(), m.group("scope")
+            c["breaking"] = c["breaking"] or bool(m.group("bang"))
+        c["pr_title"] = title
         c["pr_body"] = body if len(body) <= PR_BODY_MAX else body[:PR_BODY_MAX - 1] + "…"
         c["labels"] = [x["name"] for x in (node.get("labels") or {}).get("nodes") or []]
         if any("breaking" in x.lower() for x in c["labels"]):
@@ -277,7 +288,7 @@ def latest_release_file(app, root):
     return versions[0] if versions else None
 
 
-def collect(app, root=".", from_ref=None, to_ref="HEAD", use_gh=True):
+def collect(app, root=".", from_ref=None, to_ref="HEAD", use_gh=True, since=None):
     prefix = app.get("tag_prefix", "v")
     try:
         git(["rev-parse", "--git-dir"], root)
@@ -293,12 +304,13 @@ def collect(app, root=".", from_ref=None, to_ref="HEAD", use_gh=True):
         notes.append("Shallow clone: history may be incomplete. " + SHALLOW_HINT)
     from_ref = from_ref or last_tag
     rng = "%s..%s" % (from_ref, to_ref) if from_ref else to_ref
+    limit = ["--since=" + since] if since else []
 
     path = app.get("path", ".")
     pathspec = ["--", path] if path and path != "." else []
     try:
-        commits = read_log(root, [rng, "--no-merges"] + pathspec)
-        owner = pr_members(root, rng)
+        commits = read_log(root, [rng, "--no-merges"] + limit + pathspec)
+        owner = pr_members(root, rng, limit)
     except RuntimeError as e:
         die("%s%s" % (e, (" " + SHALLOW_HINT) if shallow else ""))
     changes = group_changes(commits, owner)
@@ -311,14 +323,38 @@ def collect(app, root=".", from_ref=None, to_ref="HEAD", use_gh=True):
         level = "minor"
 
     base = last_version
+    if to_ref == "HEAD":
+        try:
+            branch = git(["rev-parse", "--abbrev-ref", "HEAD"], root).strip()
+        except RuntimeError:
+            branch = ""
+        if branch and branch not in ("main", "master", "trunk", "develop", "HEAD") and not branch.startswith("release"):
+            notes.append("You're on branch '%s', so this includes unreleased work. Releases usually come from "
+                         "the main branch: pass --to main (or origin/main)." % branch)
+    if not last_tag:
+        others = sorted({t for p, _, t in semver_tags(root) if p != prefix})
+        if others:
+            example = others[-1]
+            other_prefix = next(p for p, _, t in semver_tags(root) if t == example)
+            notes.append("No '%s*' tags, but found version tags like '%s'. If those are your releases, set "
+                         "\"tag_prefix\": %s in .shiplog.json." % (prefix, example, json.dumps(other_prefix)))
     if not base:
         base = latest_release_file(app, root)
+        manifest = detect_project(os.path.join(root, app.get("path", "."))).get("version")
         if base:
-            notes.append("No '%s*' tag found; using the latest release file (%s) as the base version. "
-                         "The range covers full history; pass --from to narrow it." % (prefix, base))
+            notes.append("No '%s*' tag found; using the latest release file (%s) as the base version."
+                         % (prefix, base))
+        elif manifest:
+            base = manifest
+            notes.append("No '%s*' tag or release files; using the project manifest's version (%s) as the "
+                         "base. Confirm it's the last version users got." % (prefix, base))
         else:
             notes.append("No '%s*' tag and no release files: this is the first release. "
                          "0.1.0 is suggested; use 1.0.0 if the product is already stable." % prefix)
+    if not from_ref and not since and len(changes) > BIG_RANGE:
+        notes.append("No starting point, so this covers the whole history (%d changes). Ask the user where "
+                     "this release starts, then pass --from <tag or commit> or --since YYYY-MM-DD."
+                     % len(changes))
     if not changes:
         suggested = None
         notes.append("No commits in range; nothing to release.")
@@ -379,10 +415,15 @@ def summarize(out):
     lines += ["note: " + n for n in out["notes"]]
     if out["likely_user_facing"]:
         lines.append("USER-FACING:")
-        lines += [change_line(c) for c in out["likely_user_facing"]]
+        lines += [change_line(c) for c in out["likely_user_facing"][:SUMMARY_MAX]]
+        if len(out["likely_user_facing"]) > SUMMARY_MAX:
+            lines.append("…%d more (narrow with --from/--since, or use --full)"
+                         % (len(out["likely_user_facing"]) - SUMMARY_MAX))
     if out["likely_internal"]:
         lines.append("LIKELY INTERNAL (skip unless users notice):")
-        lines += [change_line(c, width=60) for c in out["likely_internal"]]
+        lines += [change_line(c, width=60) for c in out["likely_internal"][:SUMMARY_MAX]]
+        if len(out["likely_internal"]) > SUMMARY_MAX:
+            lines.append("…%d more" % (len(out["likely_internal"]) - SUMMARY_MAX))
     return "\n".join(lines)
 
 
@@ -391,13 +432,15 @@ def main(argv=None):
     ap.add_argument("--app")
     ap.add_argument("--from", dest="from_ref", help="start ref (exclusive). Default: last tag for the app")
     ap.add_argument("--to", dest="to_ref", default="HEAD")
-    ap.add_argument("--root", default=".")
+    ap.add_argument("--since", help="only commits after this date (YYYY-MM-DD), e.g. for a first release")
+    ap.add_argument("--root", help="repo root (default: found from the current folder)")
     ap.add_argument("--full", action="store_true", help="print the full JSON instead of the summary")
     ap.add_argument("--no-gh", action="store_true", help="don't fetch PR details with the GitHub CLI")
     ap.add_argument("--include-merges", action="store_true", help=argparse.SUPPRESS)  # obsolete: merges are grouped
     args = ap.parse_args(argv)
+    args.root = find_root(args.root)
     app = select_app(load_config(args.root), args.app)
-    out = collect(app, args.root, args.from_ref, args.to_ref, use_gh=not args.no_gh)
+    out = collect(app, args.root, args.from_ref, args.to_ref, use_gh=not args.no_gh, since=args.since)
     if args.full:
         json.dump(out, sys.stdout, indent=2)
         print()

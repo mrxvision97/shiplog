@@ -32,7 +32,7 @@ COMMANDS = {
 
 def release(argv):
     """Validate one release (and the rest of the app), then render. One short report."""
-    from _common import app_for_tag, load_config, select_app
+    from _common import app_for_tag, find_root, load_config, select_app
     import render
     import validate
     ap = argparse.ArgumentParser(prog="shiplog.py release", description=release.__doc__)
@@ -40,8 +40,9 @@ def release(argv):
     ap.add_argument("--app")
     ap.add_argument("--internal", action="store_true", help="also write internal.html")
     ap.add_argument("--strict", action="store_true", help="treat warnings as errors")
-    ap.add_argument("--root", default=".")
+    ap.add_argument("--root", help="repo root (default: found from the current folder)")
     args = ap.parse_args(argv)
+    args.root = find_root(args.root)
     cfg = load_config(args.root)
     app = (not args.app and app_for_tag(cfg, args.version)) or select_app(cfg, args.app)
     prefix = app.get("tag_prefix", "v")

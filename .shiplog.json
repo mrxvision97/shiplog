@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/YOUR_ORG/shiplog/main/plugins/shiplog/skills/shiplog/schema/config.schema.json",
+  "$schema": "https://raw.githubusercontent.com/mrxvision97/shiplog/main/plugins/shiplog/skills/shiplog/schema/config.schema.json",
   "apps": [
     {
       "id": "shiplog",

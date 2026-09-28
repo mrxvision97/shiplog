@@ -17,7 +17,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import (ENTRY_TYPES, NOT_TICKETS, app_for_tag, audience_ids, load_config,  # noqa: E402
+from _common import (ENTRY_TYPES, NOT_TICKETS, app_for_tag, audience_ids, find_root, load_config,  # noqa: E402
                      load_releases, parse_semver, select_app)
 
 TITLE_MAX = 100
@@ -283,8 +283,9 @@ def main(argv=None):
     ap.add_argument("--require-version")
     ap.add_argument("--tag")
     ap.add_argument("--strict", action="store_true")
-    ap.add_argument("--root", default=".")
+    ap.add_argument("--root", help="repo root (default: found from the current folder)")
     args = ap.parse_args(argv)
+    args.root = find_root(args.root)
     cfg = load_config(args.root)
     if args.tag:
         app = app_for_tag(cfg, args.tag)

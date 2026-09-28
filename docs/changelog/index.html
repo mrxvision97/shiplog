@@ -126,7 +126,12 @@ footer.site { color: var(--muted); font-size: .9rem; }
 <h4>Announce releases in Slack </h4>
 <p>After a release is published, Shiplog can post it to one or more Slack channels. Each channel only gets the changes for its audiences, and action-required changes come first with their deadline. You see a preview of every message and nothing is sent until you confirm. Webhook URLs and tokens stay in environment variables or CI secrets, never in the repository.</p>
 <p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code, Maintainers of the Shiplog CI workflow</p>
-<p class="links"><a href="https://github.com/YOUR_ORG/shiplog/blob/main/plugins/shiplog/skills/shiplog/references/slack.md">Slack setup guide</a></p>
+<p class="links"><a href="https://github.com/mrxvision97/shiplog/blob/main/plugins/shiplog/skills/shiplog/references/slack.md">Slack setup guide</a></p>
+</li>
+<li class="entry" data-type="added" data-audiences="skill-users" data-action="false">
+<h4>Use Shiplog in any repository </h4>
+<p>Install the skill into a repository with one command and commit it, so everyone on the team gets it in Claude Code. Setup detects the app name from package.json, pyproject.toml, Cargo.toml, go.mod or the git remote, and the tag style from existing tags. Commands work from any folder in the repository.</p>
+<p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code</p>
 </li>
 <li class="entry" data-type="added" data-audiences="skill-users" data-action="false">
 <h4>Import an existing CHANGELOG.md </h4>
@@ -193,11 +198,21 @@ footer.site { color: var(--muted); font-size: .9rem; }
 <h4>Fewer false warnings about jargon </h4>
 <p>Phrases like &quot;our #1 priority&quot;, product names that contain words such as Hotfix, and standards like UTF-8 or ISO-8601 no longer trigger warnings. You can also list accepted terms in the config.</p>
 <p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code</p>
+</li>
+<li class="entry" data-type="fixed" data-audiences="skill-users" data-action="false">
+<h4>Your hand-written CHANGELOG.md is never overwritten </h4>
+<p>Shiplog used to replace an existing CHANGELOG.md the first time it rendered. Now it leaves a hand-written file alone and offers to import it; once imported, the old entries carry over into the generated file.</p>
+<p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code</p>
+</li>
+<li class="entry" data-type="fixed" data-audiences="skill-users" data-action="false">
+<h4>First releases in repositories without tags </h4>
+<p>Without version tags, Shiplog now asks where the release starts instead of summarizing the whole history, uses the version in your package manifest as the starting point, and warns when you&#x27;re on a feature branch rather than the main branch.</p>
+<p class="meta"><span>Who&#x27;s affected:</span> People using the skill in Claude Code</p>
 </li></ul></section></article>
 </main>
 
 <footer class="site">
-  <p>Last release <time datetime="2026-09-28">September 28, 2026</time>. Published with <a href="https://github.com/YOUR_ORG/shiplog">Shiplog</a>.</p>
+  <p>Last release <time datetime="2026-09-28">September 28, 2026</time>. Published with <a href="https://github.com/mrxvision97/shiplog">Shiplog</a>.</p>
 </footer>
 </div>
 <script>

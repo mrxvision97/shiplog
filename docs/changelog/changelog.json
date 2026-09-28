@@ -36,9 +36,18 @@
           "links": [
             {
               "label": "Slack setup guide",
-              "url": "https://github.com/YOUR_ORG/shiplog/blob/main/plugins/shiplog/skills/shiplog/references/slack.md"
+              "url": "https://github.com/mrxvision97/shiplog/blob/main/plugins/shiplog/skills/shiplog/references/slack.md"
             }
           ]
+        },
+        {
+          "type": "added",
+          "title": "Use Shiplog in any repository",
+          "description": "Install the skill into a repository with one command and commit it, so everyone on the team gets it in Claude Code. Setup detects the app name from package.json, pyproject.toml, Cargo.toml, go.mod or the git remote, and the tag style from existing tags. Commands work from any folder in the repository.",
+          "audiences": [
+            "skill-users"
+          ],
+          "action_required": false
         },
         {
           "type": "added",
@@ -158,6 +167,24 @@
           "type": "fixed",
           "title": "Fewer false warnings about jargon",
           "description": "Phrases like \"our #1 priority\", product names that contain words such as Hotfix, and standards like UTF-8 or ISO-8601 no longer trigger warnings. You can also list accepted terms in the config.",
+          "audiences": [
+            "skill-users"
+          ],
+          "action_required": false
+        },
+        {
+          "type": "fixed",
+          "title": "Your hand-written CHANGELOG.md is never overwritten",
+          "description": "Shiplog used to replace an existing CHANGELOG.md the first time it rendered. Now it leaves a hand-written file alone and offers to import it; once imported, the old entries carry over into the generated file.",
+          "audiences": [
+            "skill-users"
+          ],
+          "action_required": false
+        },
+        {
+          "type": "fixed",
+          "title": "First releases in repositories without tags",
+          "description": "Without version tags, Shiplog now asks where the release starts instead of summarizing the whole history, uses the version in your package manifest as the starting point, and warns when you're on a feature branch rather than the main branch.",
           "audiences": [
             "skill-users"
           ],

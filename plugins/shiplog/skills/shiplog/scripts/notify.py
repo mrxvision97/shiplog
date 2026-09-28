@@ -32,7 +32,8 @@ import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from _common import ENTRY_TYPES, app_for_tag, audience_label, load_config, load_releases, select_app  # noqa: E402
+from _common import (ENTRY_TYPES, app_for_tag, audience_label, find_root, load_config,  # noqa: E402
+                     load_releases, select_app)
 import render  # noqa: E402
 import validate  # noqa: E402
 
@@ -264,8 +265,9 @@ def main(argv=None):
     ap.add_argument("--channel", action="append", help="only this channel name (repeatable)")
     ap.add_argument("--dry-run", action="store_true", help="print the Slack payloads; send nothing")
     ap.add_argument("--force", action="store_true", help="send even if already sent")
-    ap.add_argument("--root", default=".")
+    ap.add_argument("--root", help="repo root (default: found from the current folder)")
     args = ap.parse_args(argv)
+    args.root = find_root(args.root)
     cfg = load_config(args.root)
     version = args.version
     if args.tag:

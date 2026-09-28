@@ -2,6 +2,7 @@
 import json
 import os
 import re
+import subprocess
 import sys
 
 CONFIG_FILE = ".shiplog.json"
@@ -15,8 +16,8 @@ TYPE_LABELS = {
     "security": "Security",
 }
 EVERYONE = "everyone"
-# Replace YOUR_ORG with your fork so editors can fetch the schemas.
-SCHEMA_BASE_URL = "https://raw.githubusercontent.com/YOUR_ORG/shiplog/main/plugins/shiplog/skills/shiplog/schema/"
+# Where editors fetch the schemas from ("$schema" in release files and .shiplog.json).
+SCHEMA_BASE_URL = "https://raw.githubusercontent.com/mrxvision97/shiplog/main/plugins/shiplog/skills/shiplog/schema/"
 RELEASE_SCHEMA_URL = SCHEMA_BASE_URL + "release.schema.json"
 CONFIG_SCHEMA_URL = SCHEMA_BASE_URL + "config.schema.json"
 
@@ -95,6 +96,135 @@ APP_DEFAULTS = {
 def die(msg, code=2):
     print("shiplog: " + msg, file=sys.stderr)
     sys.exit(code)
+
+
+def git_toplevel(start="."):
+    try:
+        r = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=start, capture_output=True, text=True)
+    except OSError:
+        return None
+    return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else None
+
+
+def find_root(root=None):
+    """The directory to work in. An explicit --root wins. Otherwise the nearest
+    folder with a .shiplog.json (walking up from the current one), then the git
+    top level, then the current folder. Returned relative to the current folder."""
+    if root:
+        return root
+    here = os.path.abspath(".")
+    top = git_toplevel(here)
+    d = here
+    while True:
+        if os.path.exists(os.path.join(d, CONFIG_FILE)):
+            return os.path.relpath(d)
+        parent = os.path.dirname(d)
+        if parent == d or (top and os.path.samefile(d, top)):
+            break
+        d = parent
+    return os.path.relpath(top) if top else "."
+
+
+def _toml_section(text, section):
+    """Minimal TOML reader for simple `key = "value"` lines in one [section]."""
+    m = re.search(r"^\[%s\]\s*$(.*?)(?=^\[|\Z)" % re.escape(section), text, re.M | re.S)
+    if not m:
+        return {}
+    return dict(re.findall(r'^\s*(\w+)\s*=\s*"([^"]*)"', m.group(1), re.M))
+
+
+# Package names that say nothing about the product (workspace roots, starters).
+GENERIC_NAMES = {"web", "app", "frontend", "front-end", "client", "server", "backend", "api", "root", "site",
+                 "website", "monorepo", "workspace", "main", "my-app", "project"}
+# Versions that starter templates put in manifests; not evidence of a release.
+PLACEHOLDER_VERSIONS = {"0.0.0", "0.0.1", "0.1.0", "1.0.0"}
+
+
+def detect_project(root="."):
+    """Best-effort name, description and version from common manifests.
+    Keys are missing when nothing was found."""
+    def read(name):
+        try:
+            with open(os.path.join(root, name), encoding="utf-8") as f:
+                return f.read()
+        except (OSError, UnicodeDecodeError):
+            return None
+    info = {}
+    text = read("package.json")
+    if text:
+        try:
+            pkg = json.loads(text)
+        except ValueError:
+            pkg = {}
+        if isinstance(pkg, dict):
+            info = {k: pkg[k] for k in ("name", "description", "version") if isinstance(pkg.get(k), str) and pkg[k]}
+            if "name" in info:
+                info["name"] = info["name"].split("/")[-1]  # drop npm scope
+    for fname, sections in (("pyproject.toml", ("project", "tool.poetry")), ("Cargo.toml", ("package",))):
+        text = read(fname)
+        for sec in sections if text and not info.get("name") else ():
+            found = _toml_section(text, sec)
+            if found.get("name"):
+                info = {k: found[k] for k in ("name", "description", "version") if found.get(k)}
+                break
+    text = read("go.mod")
+    if text and not info.get("name"):
+        m = re.search(r"^module\s+(\S+)", text, re.M)
+        if m:
+            info["name"] = m.group(1).rstrip("/").split("/")[-1]
+    if not info.get("name") or info["name"].lower() in GENERIC_NAMES:
+        try:
+            r = subprocess.run(["git", "remote", "get-url", "origin"], cwd=root, capture_output=True, text=True)
+            m = re.search(r"([^/:]+?)(?:\.git)?/?$", r.stdout.strip()) if r.returncode == 0 else None
+            if m:
+                info["name"] = m.group(1)
+        except OSError:
+            pass
+    if not info.get("name") or info["name"].lower() in GENERIC_NAMES:
+        top = git_toplevel(root)
+        if top:
+            info["name"] = os.path.basename(top)
+    if not info.get("name"):
+        info["name"] = os.path.basename(os.path.abspath(root))
+    if info.get("version") and (not parse_semver(info["version"]) or info["version"] in PLACEHOLDER_VERSIONS):
+        del info["version"]
+    return info
+
+
+def semver_tags(root="."):
+    """[(prefix, version, tag)] for every tag that ends in a SemVer version."""
+    try:
+        r = subprocess.run(["git", "tag", "--list"], cwd=root, capture_output=True, text=True)
+    except OSError:
+        return []
+    out = []
+    for tag in r.stdout.split():
+        m = re.match(r"^(.*?)(\d+\.\d+\.\d+.*)$", tag)
+        if m and parse_semver(m.group(2)):
+            out.append((m.group(1), m.group(2), tag))
+    return out
+
+
+def detect_tag_prefix(root="."):
+    """The most common prefix of existing version tags ("v", "", "release-"), or None."""
+    counts = {}
+    for prefix, _, _ in semver_tags(root):
+        counts[prefix] = counts.get(prefix, 0) + 1
+    if not counts:
+        return None
+    return max(sorted(counts), key=lambda p: counts[p])
+
+
+GENERATED_MARKER = "Generated by Shiplog"
+
+
+def is_generated(path):
+    """True if PATH was written by Shiplog (so it's safe to overwrite)."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            return GENERATED_MARKER in f.read(4096)
+    except (OSError, UnicodeDecodeError):
+        return False
 
 
 def load_config(root="."):

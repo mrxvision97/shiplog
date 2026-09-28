@@ -14,7 +14,9 @@ Slack announcements, faster drafting, archive pages and audience feeds
 
 - **Announce releases in Slack** — After a release is published, Shiplog can post it to one or more Slack channels. Each channel only gets the changes for its audiences, and action-required changes come first with their deadline. You see a preview of every message and nothing is sent until you confirm. Webhook URLs and tokens stay in environment variables or CI secrets, never in the repository.
   - Affects: People using the skill in Claude Code, Maintainers of the Shiplog CI workflow
-  - [Slack setup guide](https://github.com/YOUR_ORG/shiplog/blob/main/plugins/shiplog/skills/shiplog/references/slack.md)
+  - [Slack setup guide](https://github.com/mrxvision97/shiplog/blob/main/plugins/shiplog/skills/shiplog/references/slack.md)
+- **Use Shiplog in any repository** — Install the skill into a repository with one command and commit it, so everyone on the team gets it in Claude Code. Setup detects the app name from package.json, pyproject.toml, Cargo.toml, go.mod or the git remote, and the tag style from existing tags. Commands work from any folder in the repository.
+  - Affects: People using the skill in Claude Code
 - **Import an existing CHANGELOG.md** — Ask Claude to import your Keep a Changelog file and each version becomes a Shiplog release. Old entries don't say who is affected, so every imported entry is marked for review, and the validator lists them until you confirm the impact.
   - Affects: People using the skill in Claude Code
 - **A feed for each audience** — Besides the main feed, each audience now gets its own Atom feed with only the changes that affect it, plus changes for everyone. The changelog page links to all of them, so admins can subscribe to admin changes only.
@@ -47,4 +49,8 @@ Slack announcements, faster drafting, archive pages and audience feeds
 - **Better version suggestions** — After a pre-release such as 1.2.0-beta.1, the suggested version is now 1.2.0 instead of 1.2.1 or 1.3.0. First releases are suggested as 0.1.0, tags on other branches are ignored, and shallow CI checkouts get a clear message instead of a wrong range.
   - Affects: People using the skill in Claude Code, Maintainers of the Shiplog CI workflow
 - **Fewer false warnings about jargon** — Phrases like "our #1 priority", product names that contain words such as Hotfix, and standards like UTF-8 or ISO-8601 no longer trigger warnings. You can also list accepted terms in the config.
+  - Affects: People using the skill in Claude Code
+- **Your hand-written CHANGELOG.md is never overwritten** — Shiplog used to replace an existing CHANGELOG.md the first time it rendered. Now it leaves a hand-written file alone and offers to import it; once imported, the old entries carry over into the generated file.
+  - Affects: People using the skill in Claude Code
+- **First releases in repositories without tags** — Without version tags, Shiplog now asks where the release starts instead of summarizing the whole history, uses the version in your package manifest as the starting point, and warns when you're on a feature branch rather than the main branch.
   - Affects: People using the skill in Claude Code

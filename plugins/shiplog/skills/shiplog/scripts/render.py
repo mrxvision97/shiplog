@@ -20,11 +20,11 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from _common import (ENTRY_TYPES, TYPE_LABELS, audience_label, load_config,  # noqa: E402
-                     load_releases, select_app, ui_strings)
+from _common import (ENTRY_TYPES, TYPE_LABELS, audience_label, find_root, is_generated,  # noqa: E402
+                     load_config, load_releases, select_app, ui_strings)
 import validate  # noqa: E402
 
-PROJECT_URL = "https://github.com/YOUR_ORG/shiplog"  # set to your fork's URL
+PROJECT_URL = "https://github.com/mrxvision97/shiplog"  # footer link; override with project_url
 TEMPLATE_CANDIDATES = [
     os.path.join(HERE, "..", "assets", "templates", "page.html"),  # inside the skill
     os.path.join(HERE, "page.html"),  # vendored copy in .shiplog/scripts/
@@ -406,6 +406,25 @@ def render_json(app, releases, internal):
     return json.dumps(data, indent=2, ensure_ascii=False) + "\n"
 
 
+def changelog_conflict(path, releases):
+    """Why an existing hand-written CHANGELOG.md must not be replaced, or None.
+    It's safe once every version in it has a release file and nothing is unreleased."""
+    if not os.path.exists(path) or is_generated(path):
+        return None
+    import import_changelog
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+    have = {r.get("version") for r in releases}
+    missing = [r["version"] for r in import_changelog.parse_changelog(text) if r["version"] not in have]
+    unreleased = re.search(r"^##\s+\[?unreleased\]?.*?$(.*?)(?=^##\s|\Z)", text, re.I | re.M | re.S)
+    if missing:
+        return ("it's hand-written and has versions without release files (%s). Run `shiplog.py import` "
+                "first, or set changelog_md to another path or false." % ", ".join(missing[:5]))
+    if unreleased and re.search(r"^\s*[-*+]\s+\S", unreleased.group(1), re.M):
+        return "its Unreleased section has notes that would be lost. Move them into a release file first."
+    return None
+
+
 def write(path, content):
     path = os.path.normpath(path)
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
@@ -441,8 +460,12 @@ def render_app(app, root, internal, quiet=False):
                 os.remove(os.path.join(out_dir, name))
     md = app.get("changelog_md", True)
     if md:
-        md_path = md if isinstance(md, str) else os.path.join(app.get("path", "."), "CHANGELOG.md")
-        written.append(write(os.path.join(root, md_path), render_markdown(app, releases)))
+        md_path = os.path.join(root, md if isinstance(md, str) else os.path.join(app.get("path", "."), "CHANGELOG.md"))
+        problem = changelog_conflict(md_path, releases)
+        if problem:
+            print("shiplog: not writing %s: %s" % (os.path.normpath(md_path), problem), file=sys.stderr)
+        else:
+            written.append(write(md_path, render_markdown(app, releases)))
     if not quiet:
         print("== %s ==" % app["name"])
         for p in written:
@@ -456,8 +479,9 @@ def main(argv=None):
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--internal", action="store_true", help="also write internal.html with internal notes")
     ap.add_argument("--skip-validate", action="store_true")
-    ap.add_argument("--root", default=".")
+    ap.add_argument("--root", help="repo root (default: found from the current folder)")
     args = ap.parse_args(argv)
+    args.root = find_root(args.root)
     cfg = load_config(args.root)
     apps = cfg["apps"] if args.all else [select_app(cfg, args.app)]
     if not args.skip_validate:

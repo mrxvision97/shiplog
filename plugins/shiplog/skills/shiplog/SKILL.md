@@ -7,7 +7,7 @@ description: Write and publish structured, plain-language changelogs for any app
 
 Shiplog turns raw git history into release notes that customers, support, and internal teams can actually use. Each release is stored as a small JSON file in the repo (the source of truth). Scripts validate it and generate the outputs: `CHANGELOG.md`, an accessible static HTML page, Atom feeds and a JSON feed.
 
-The scripts are Python 3.10+ and use only the standard library. Run them from the user's repository root. Every step is one command: `python SCRIPTS/shiplog.py <command>`, where `SCRIPTS` is this skill's `scripts/` directory. Below, `shiplog` is short for that.
+The scripts are Python 3.10+ and use only the standard library. They work in any git repository, from any folder inside it: the repo root is found automatically. Every step is one command: `python SCRIPTS/shiplog.py <command>`, where `SCRIPTS` is this skill's `scripts/` directory. Below, `shiplog` is short for that.
 
 ## Why the structure matters
 
@@ -27,7 +27,8 @@ Changelogs usually fail in two ways. They get skipped, or they're written for en
 Look for `.shiplog.json` at the repo root.
 
 - **Found:** read it. Note the apps, their `path`, `tag_prefix`, `releases_dir`, and the defined audiences.
-- **Not found:** run `shiplog init --name "<App name>"` (add `--id`, `--base-url`, `--tag-prefix` if known). Then tailor the `audiences` list with the user. Audiences are the groups entries target, e.g. admins, end users, API consumers, support. Ask who they are rather than guessing: a wrong audience list makes every entry's impact wrong.
+- **Not found:** run `shiplog init`. It detects the name and description (package.json, pyproject.toml, Cargo.toml, go.mod, git remote) and the tag prefix from existing version tags (`v1.2.3`, `1.2.3`, `release-1.2.3`). Pass `--name`, `--base-url` or `--tag-prefix` to override. Show the user what was detected, then tailor the `audiences` list with them. Audiences are the groups entries target, e.g. admins, end users, API consumers, support. Ask who they are rather than guessing: a wrong audience list makes every entry's impact wrong.
+- **Existing hand-written CHANGELOG.md:** Shiplog never overwrites it. Offer `shiplog import` so its history becomes release files; after that Shiplog generates CHANGELOG.md, keeping the old entries.
 - **Monorepo:** one `apps[]` item per app, each with its own `path`, `tag_prefix` and `releases_dir`. See `references/config.md`.
 
 If the user wants CI enforcement, run `shiplog init --with-ci`. It vendors the scripts into `.shiplog/scripts/` and adds a GitHub Actions workflow, so CI never depends on Claude.
@@ -45,6 +46,12 @@ The output is compact: a header with the range and **suggested** version, notes,
 feat!(api)  #212  Require API keys on all endpoints  [PROJ-9]  (3 commits)  {breaking-change}
     > PR body excerpt…
 ```
+
+Act on the notes before drafting, and fold any questions into your one batched message:
+
+- **"You're on branch X":** releases come from the main branch. Re-run with `--to main` (or `origin/main`) unless the user says otherwise.
+- **"No starting point… whole history":** there are no tags yet. Ask where this release starts (a date, tag or commit), then re-run with `--since YYYY-MM-DD` or `--from <ref>`. Never draft a changelog from years of history.
+- **"found version tags like …":** the configured `tag_prefix` doesn't match the repo's tags; offer to fix it.
 
 `!` means breaking. Commits are grouped by PR (merge commits and squash merges). When the GitHub CLI is available, PR titles, bodies and labels are fetched in one call. `--full` gives JSON with every commit, if you really need it. Read the notes: they cover first releases, shallow clones and unconventional commit messages.
 
@@ -75,7 +82,7 @@ Write `<releases_dir>/<version>.json`. Format: `references/schema.md`. Minimal e
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/YOUR_ORG/shiplog/main/plugins/shiplog/skills/shiplog/schema/release.schema.json",
+  "$schema": "https://raw.githubusercontent.com/mrxvision97/shiplog/main/plugins/shiplog/skills/shiplog/schema/release.schema.json",
   "version": "2.4.0",
   "date": "2026-09-28",
   "summary": "Bulk export and faster search",
@@ -110,7 +117,7 @@ If the app's config has `notify.slack`, offer to announce the release. Run `ship
 
 ### 8. Wrap up
 
-Tell the user briefly what was written and where, and the next steps: commit the release file and outputs, tag `v2.4.0`, deploy `output_dir`. Don't create tags, push or deploy unless asked.
+Tell the user briefly what was written and where, and the next steps: commit the release file and outputs, tag the release commit (`git tag v2.4.0 <commit>`, so the next `collect` starts there), deploy `output_dir`. Don't create tags, push or deploy unless asked.
 
 ## Other tasks
 

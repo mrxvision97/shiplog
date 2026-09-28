@@ -1,6 +1,6 @@
 {
   "name": "shiplog",
-  "owner": { "name": "YOUR_NAME" },
+  "owner": { "name": "Aman Kumar" },
   "metadata": {
     "description": "Plain-language, impact-aware changelogs for every app you ship."
   },

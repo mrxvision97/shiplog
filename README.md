@@ -19,21 +19,37 @@ Claude drafts the entries from your commits and PRs, asks about any impact it ca
 
 ## Install
 
-**As a plugin (recommended):**
+Shiplog works in any git repository: any language, with or without tags, one app or a monorepo.
+
+**Into one repo, for the whole team.** Run this in the repo, then commit `.claude/skills/shiplog`. Everyone who opens the repo in Claude Code gets the skill:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mrxvision97/shiplog/main/install.sh | sh
+```
+
+**For all your repos:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mrxvision97/shiplog/main/install.sh | sh -s -- --user
+```
+
+**Or as a Claude Code plugin:**
 
 ```
-/plugin marketplace add YOUR_ORG/shiplog
+/plugin marketplace add mrxvision97/shiplog
 /plugin install shiplog@shiplog
 ```
 
-**Or copy the skill** into a project (`.claude/skills/`) or your user folder (`~/.claude/skills/`):
+From a local clone, `sh install.sh` (or `sh install.sh --user`) does the same without downloading. Requires Python 3.10+ and git. There are no other dependencies.
 
-```bash
-git clone https://github.com/YOUR_ORG/shiplog
-cp -r shiplog/plugins/shiplog/skills/shiplog ~/.claude/skills/
-```
+### First run in an existing repo
 
-Requires Python 3.10+ and git. There are no other dependencies.
+Open Claude Code anywhere in the repo and say "Set up a changelog for this repo". Shiplog:
+
+- detects the app name from `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod` or the git remote, and the tag style from existing tags (`v1.2.3`, `1.2.3`, `release-1.2.3`)
+- never overwrites a hand-written `CHANGELOG.md`. It offers to import it, and your old entries carry over
+- with no tags yet, asks where the first release starts instead of summarizing years of history
+- warns when you're on a feature branch, since releases come from `main`
 
 ## Use
 

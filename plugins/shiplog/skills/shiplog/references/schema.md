@@ -40,7 +40,7 @@ Fields marked internal only appear only in `internal.html` and `changelog.intern
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/YOUR_ORG/shiplog/main/plugins/shiplog/skills/shiplog/schema/release.schema.json",
+  "$schema": "https://raw.githubusercontent.com/mrxvision97/shiplog/main/plugins/shiplog/skills/shiplog/schema/release.schema.json",
   "version": "3.0.0",
   "date": "2026-10-01",
   "summary": "New API authentication and saved filters",
