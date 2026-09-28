@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{page_title}}</title>
 <meta name="description" content="{{meta_description}}">
-{{robots}}
-<link rel="alternate" type="application/atom+xml" title="{{app_name}} changelog (Atom)" href="feed.xml">
-<link rel="alternate" type="application/json" title="{{app_name}} changelog (JSON)" href="changelog.json">
+{{meta_tags}}
+<link rel="alternate" type="application/atom+xml" title="{{s.title}} (Atom)" href="feed.xml">
+{{feed_links}}<link rel="alternate" type="application/json" title="{{s.title}} (JSON)" href="changelog.json">
 <style>
 :root {
   --bg: #ffffff; --fg: #1a1a1f; --muted: #52525b; --border: #e4e4e7; --surface: #f7f7f8;
@@ -74,47 +74,52 @@ li.entry:first-child { border-top: 0; }
 .links { display: flex; gap: 1rem; flex-wrap: wrap; font-size: .95rem; margin-top: .35rem; }
 details.internal { margin-top: .5rem; background: var(--surface); border: 1px dashed var(--muted); border-radius: .4rem; padding: .5rem .75rem; font-size: .95rem; }
 details.internal summary { cursor: pointer; font-weight: 600; }
+nav.archive { margin: 0 0 2rem; }
+nav.archive h2 { font-size: 1.1rem; margin: 0 0 .5rem; }
+nav.archive ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem 1rem; }
+nav.archive a[aria-current] { font-weight: 700; text-decoration: none; }
 footer.site { color: var(--muted); font-size: .9rem; }
 [hidden] { display: none !important; }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
-@media print { form.filters, .skip, .subscribe { display: none; } }
+@media print { form.filters, .skip, .subscribe, nav.archive { display: none; } }
 </style>
 </head>
 <body>
-<a class="skip" href="#main">Skip to changelog</a>
+<a class="skip" href="#main">{{s.skip_link}}</a>
 <div class="wrap">
 <header class="site">
   {{logo}}
   <h1>{{heading}}</h1>
   <p>{{intro}}</p>
-  <p class="subscribe">Follow updates: <a href="feed.xml">Atom/RSS feed</a> · <a href="changelog.json">JSON</a></p>
+  <p class="subscribe">{{s.follow}} <a href="feed.xml">{{s.feed_link}}</a> · <a href="changelog.json">{{s.json_link}}</a>{{audience_feed_list}}</p>
 </header>
 {{internal_banner}}
 <form class="filters" id="filters" hidden aria-labelledby="filters-heading">
-  <h2 id="filters-heading" style="font-size:1.1rem;margin:0 0 .75rem">Filter changes</h2>
+  <h2 id="filters-heading" style="font-size:1.1rem;margin:0 0 .75rem">{{s.filter_heading}}</h2>
   <fieldset>
-    <legend>Type of change</legend>
+    <legend>{{s.type_legend}}</legend>
     <div class="chips">{{type_filters}}</div>
   </fieldset>
   <div class="row">
-    <label class="stack" for="f-audience">Affects
+    <label class="stack" for="f-audience">{{s.affects}}
       <select id="f-audience" name="audience">
-        <option value="">Anyone</option>
+        <option value="">{{s.anyone}}</option>
         {{audience_options}}
       </select>
     </label>
-    <label class="stack" for="f-search">Search
+    <label class="stack" for="f-search">{{s.search}}
       <input type="search" id="f-search" name="q" autocomplete="off">
     </label>
-    <label class="inline"><input type="checkbox" id="f-action" name="action"> Action required only</label>
+    <label class="inline"><input type="checkbox" id="f-action" name="action"> {{s.action_only}}</label>
   </div>
-  <p id="result-count" role="status" aria-live="polite"></p>
+  <p id="result-count" role="status" aria-live="polite" data-all="{{s.showing_all}}" data-some="{{s.showing_some}}"></p>
 </form>
 <main id="main">
 {{releases}}
 </main>
+{{archive_nav}}
 <footer class="site">
-  <p>{{updated}}Published with <a href="{{project_url}}">Shiplog</a>.</p>
+  <p>{{updated}}{{published_with}}</p>
 </footer>
 </div>
 <script>
@@ -141,7 +146,9 @@ footer.site { color: var(--muted); font-size: .9rem; }
     });
     groups.forEach(function (g) { g.hidden = !g.querySelector('li.entry:not([hidden])'); });
     releases.forEach(function (r) { r.hidden = !r.querySelector('li.entry:not([hidden])'); });
-    count.textContent = shown === entries.length ? 'Showing all ' + shown + ' changes.' : 'Showing ' + shown + ' of ' + entries.length + ' changes.';
+    count.textContent = shown === entries.length
+      ? count.dataset.all.replace('{n}', shown)
+      : count.dataset.some.replace('{shown}', shown).replace('{total}', entries.length);
   }
   form.addEventListener('input', apply);
   form.addEventListener('change', apply);

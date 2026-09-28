@@ -27,6 +27,16 @@ The reader is a customer, an admin, or a support agent skimming for one question
 | `refactor(auth)!: drop legacy session tokens` | **Signed-out sessions on older mobile app versions.** *(breaking)* Versions older than 4.2 of the mobile app can no longer sign in. Action: update the app from the App Store or Google Play. |
 | `chore(deps): bump lodash` | *(skip, no user-visible change)* |
 | `perf(search): add trigram index` | **Faster search in large workspaces.** Search results now appear in about a second in workspaces with over 100,000 records. |
+| `perf(api): cache org lookups, p95 1.8s -> 300ms` | **Dashboards load up to 6x faster.** Pages that list many projects now open in about 0.3 seconds instead of up to 2 seconds. No action needed. |
+| `feat(billing): enforce seat limit on Starter plan` | **Starter plans are now limited to 5 seats.** *(action required)* Workspaces on the Starter plan can't add a sixth member. Existing members keep access. Action: before inviting more people, upgrade in Settings → Billing, or remove inactive members. |
+| `chore(api): lower rate limit to 600/min for free keys` | **Free API keys: 600 requests per minute.** *(action required, developers)* The free tier limit drops from 1,000 to 600 requests per minute on March 1, 2027. Requests over the limit get a 429 response. Action: add retry with backoff, or upgrade your plan before March 1, 2027. |
+| `refactor(ui): move export button into ⋯ menu` | **Export moved into the ⋯ menu on the Reports page.** The Export button is now under the ⋯ (More) menu at the top right of each report, next to Share. Everything else about exporting is unchanged. |
+
+Notes on these:
+
+- **Performance:** give a number the reader can feel (seconds, not "p95"), and say where they'll notice it.
+- **Pricing and limits:** the new limit, who it applies to, when it starts, and what happens when someone hits it. Never bury a limit inside a feature entry.
+- **UI moves:** say where the thing was, where it is now, and that it still works the same. Support gets "where did X go?" tickets otherwise.
 
 ## Choosing the type
 

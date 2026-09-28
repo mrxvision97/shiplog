@@ -20,6 +20,58 @@ SCHEMA_BASE_URL = "https://raw.githubusercontent.com/YOUR_ORG/shiplog/main/plugi
 RELEASE_SCHEMA_URL = SCHEMA_BASE_URL + "release.schema.json"
 CONFIG_SCHEMA_URL = SCHEMA_BASE_URL + "config.schema.json"
 
+# Page labels. Override any of them per app with "strings" in .shiplog.json.
+DEFAULT_STRINGS = {
+    "skip_link": "Skip to changelog",
+    "title": "{name} changelog",
+    "internal_suffix": " (internal)",
+    "intro": "New features, improvements and fixes in {name}.",
+    "logo_alt": "{name} logo",
+    "follow": "Follow updates:",
+    "feed_link": "Atom/RSS feed",
+    "json_link": "JSON",
+    "audience_feeds": "Feeds by audience:",
+    "filter_heading": "Filter changes",
+    "type_legend": "Type of change",
+    "affects": "Affects",
+    "anyone": "Anyone",
+    "search": "Search",
+    "action_only": "Action required only",
+    "showing_all": "Showing all {n} changes.",
+    "showing_some": "Showing {shown} of {total} changes.",
+    "no_releases": "No releases yet.",
+    "withdrawn": "(withdrawn)",
+    "breaking": "Breaking change",
+    "action_required": "Action required",
+    "whos_affected": "Who's affected:",
+    "what_to_do": "What you need to do",
+    "deadline": "Deadline:",
+    "internal_notes": "Internal notes",
+    "refs": "Refs:",
+    "internal_banner": "Internal view. Includes support notes and references. Do not share publicly.",
+    "last_release": "Last release {date}.",
+    "published_with": "Published with {link}.",
+    "archive": "Older releases",
+    "latest": "Latest",
+    "everyone": "Everyone",
+    "types": dict(TYPE_LABELS),
+    "months": ["January", "February", "March", "April", "May", "June", "July", "August",
+               "September", "October", "November", "December"],
+    "date_format": "{month} {day}, {year}",
+}
+
+
+def ui_strings(app):
+    """DEFAULT_STRINGS merged with the app's "strings" overrides (cached on the app)."""
+    if "_strings" not in app:
+        s = dict(DEFAULT_STRINGS)
+        custom = app.get("strings") or {}
+        s.update(custom)
+        s["types"] = dict(DEFAULT_STRINGS["types"], **(custom.get("types") or {}))
+        app["_strings"] = s
+    return app["_strings"]
+
+
 SEMVER_RE = re.compile(
     r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
     r"(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?"
@@ -84,7 +136,7 @@ def audience_ids(app):
 
 def audience_label(app, aid):
     if aid == EVERYONE:
-        return "Everyone"
+        return ui_strings(app)["everyone"]
     for a in app.get("audiences", []):
         if a["id"] == aid:
             return a.get("label", aid)

@@ -42,9 +42,37 @@ Lives at the repo root. It holds either a single app object, or `{"apps": [...]}
 | `lang` | `en` | Page language attribute (for screen readers). |
 | `audiences` | `[]` | Groups entries can target. `everyone` is always available. |
 | `theme.accent_color` | `#4f46e5` | Hex color for link underlines and controls. A contrast warning prints if it's too low. |
-| `theme.logo_url` | none | Logo shown in the header. |
+| `theme.logo_url` | none | Logo shown in the header. Also the Open Graph image unless `theme.og_image` is set. |
+| `theme.og_image` | none | Image for link previews (`og:image`). |
+| `page_size` | `20` | Releases on `index.html`. Older ones go to one archive page per year (`2025.html`, …). `0` puts everything on one page. |
+| `strings` | English | Page labels, for translating the page. See below. |
 | `project_url` | Shiplog repo | Footer link target. |
 | `allowed_terms` | `[]` | Words the jargon check accepts, e.g. a product called "Hotfix Hub". Capitalized mid-sentence words are already treated as names. |
+
+## Feeds
+
+`feed.xml` has every release. Each audience also gets `feed-<id>.xml`, with only the entries for that audience plus `everyone` entries. The page links all of them.
+
+## Translating the page
+
+Override any label with `strings`. Keys you leave out stay English. `{name}`, `{n}`, `{shown}`, `{total}`, `{date}` and `{link}` are filled in by Shiplog.
+
+```json
+"lang": "de",
+"strings": {
+  "title": "{name} Änderungsprotokoll",
+  "skip_link": "Zum Inhalt springen",
+  "whos_affected": "Betrifft:",
+  "what_to_do": "Das müssen Sie tun",
+  "showing_all": "Alle {n} Änderungen.",
+  "showing_some": "{shown} von {total} Änderungen.",
+  "types": { "added": "Neu", "changed": "Geändert", "fixed": "Behoben" },
+  "months": ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"],
+  "date_format": "{day}. {month} {year}"
+}
+```
+
+The full list of keys is `DEFAULT_STRINGS` in `scripts/_common.py`. `CHANGELOG.md` stays in Keep a Changelog's English format.
 
 ## Choosing audiences
 

@@ -108,6 +108,34 @@
             },
             "logo_url": {
               "type": "string"
+            },
+            "og_image": {
+              "type": "string"
+            }
+          }
+        },
+        "page_size": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Releases on index.html; older ones go to per-year pages. 0 = all on one page."
+        },
+        "strings": {
+          "type": "object",
+          "description": "Page labels for translation. See DEFAULT_STRINGS in scripts/_common.py.",
+          "properties": {
+            "types": {
+              "type": "object"
+            },
+            "months": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 12,
+              "maxItems": 12
+            },
+            "date_format": {
+              "type": "string"
             }
           }
         }
