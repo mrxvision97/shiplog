@@ -135,7 +135,8 @@ footer.site { color: var(--faint); font-size: .9rem; padding-top: 2.5rem; }
   <h1>{{heading}}</h1>
   <p class="lede">{{intro}}</p>
   <div class="subscribe">
-    <a class="btn" href="feed.xml"><svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><circle cx="3" cy="13" r="2"/><path d="M1 6.5a8.5 8.5 0 0 1 8.5 8.5h-2A6.5 6.5 0 0 0 1 8.5z"/><path d="M1 1.5A13.5 13.5 0 0 1 14.5 15h-2A11.5 11.5 0 0 0 1 3.5z"/></svg>{{s.subscribe}}</a>
+    <a class="btn" href="{{subscribe_href}}">{{subscribe_icon}}{{s.subscribe}}</a>
+    {{rss_link}}
     {{audience_feed_list}}
     <a class="plain" href="changelog.json">{{s.json_link}}</a>
   </div>

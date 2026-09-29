@@ -43,6 +43,7 @@ Lives at the repo root. It holds either a single app object, or `{"apps": [...]}
 | `lang` | `en` | Page language attribute (for screen readers). |
 | `audiences` | `[]` | Groups entries can target. `everyone` is always available. |
 | `theme.accent_color` | `#4f46e5` | Hex color for link underlines and controls. A contrast warning prints if it's too low. |
+| `subscribe_url` | none | Your email signup page (Buttondown, Mailchimp, Substack, a `mailto:` link…). The Subscribe button goes there, and the RSS feed becomes a secondary "Atom/RSS feed" link. Without it, Subscribe opens the RSS feed. Shiplog doesn't send email itself. |
 | `theme.logo_url` | none | Logo shown in the header. Also the Open Graph image unless `theme.og_image` is set. |
 | `theme.og_image` | none | Image for link previews (`og:image`). |
 | `page_size` | `20` | Releases on `index.html`. Older ones go to one archive page per year (`2025.html`, …). `0` puts everything on one page. |

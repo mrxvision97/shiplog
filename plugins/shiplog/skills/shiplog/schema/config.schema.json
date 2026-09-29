@@ -196,6 +196,11 @@
               }
             }
           }
+        },
+        "subscribe_url": {
+          "type": "string",
+          "pattern": "^(https?://|mailto:)",
+          "description": "Email signup page (Buttondown, Mailchimp, Substack...). The Subscribe button links here; the RSS feed becomes a secondary link."
         }
       }
     }

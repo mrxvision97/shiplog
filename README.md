@@ -161,7 +161,7 @@ Laid out the way product teams publish changelogs (Linear, Raycast, Notion): eac
 - WCAG AA contrast in light and dark mode. Status is shown as text, never color alone.
 - A slim filter bar: show changes for one audience, "action required" only, and search. The result count is announced to screen readers.
 - Permalinks for every release. The latest 20 releases on the main page, older ones on yearly archive pages.
-- Atom and JSON feeds, plus one Atom feed per audience.
+- Atom and JSON feeds, plus one Atom feed per audience. The Subscribe button opens the Atom feed, or your email signup page if you set `subscribe_url` (Buttondown, Mailchimp, Substack…).
 - Open Graph tags for link previews. Every label can be translated through `strings` in the config.
 - An `--internal` build adds support notes and ticket refs, and is marked `noindex`. Keep it behind auth.
 

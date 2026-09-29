@@ -35,6 +35,12 @@ PUBLIC_ENTRY_KEYS = ["type", "title", "description", "audiences", "action_requir
 DEFAULT_PAGE_SIZE = 20
 FEED_MAX = 50
 SAFE_URL_RE = re.compile(r"^https?://", re.I)
+SUBSCRIBE_URL_RE = re.compile(r"^(https?://|mailto:)", re.I)
+RSS_ICON = ('<svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><circle cx="3" cy="13" r="2"/>'
+            '<path d="M1 6.5a8.5 8.5 0 0 1 8.5 8.5h-2A6.5 6.5 0 0 0 1 8.5z"/>'
+            '<path d="M1 1.5A13.5 13.5 0 0 1 14.5 15h-2A11.5 11.5 0 0 0 1 3.5z"/></svg>')
+MAIL_ICON = ('<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6">'
+             '<rect x="1.5" y="3" width="13" height="10" rx="1.5"/><path d="M2 4l6 5 6-5"/></svg>')
 URL_RE = re.compile(r"(https?://[^\s<>\"']+[^\s<>\"'.,;:!?)])")
 
 
@@ -320,6 +326,12 @@ def render_html(app, releases, internal, page="index.html", pages=None):
     audience_options = "".join('<option value="%s">%s</option>' % (esc(a["id"]), esc(a.get("label", a["id"])))
                                for a in app.get("audiences", []))
     feeds = audience_feeds(app)
+    subscribe = app.get("subscribe_url") or ""
+    if subscribe and not SUBSCRIBE_URL_RE.match(subscribe):
+        if page == "index.html" and not internal:
+            print("shiplog: subscribe_url must start with https://, http:// or mailto:; ignoring it",
+                  file=sys.stderr)
+        subscribe = ""
     feed_links = "".join('<link rel="alternate" type="application/atom+xml" title="%s (%s)" href="%s">\n'
                          % (esc(s["title"].format(name=name)), esc(lbl), fname) for _, fname, lbl in feeds)
     feed_list = ('<details class="feeds"><summary>%s</summary><ul>%s</ul></details>' % (
@@ -351,6 +363,10 @@ def render_html(app, releases, internal, page="index.html", pages=None):
                             if internal else ""),
         "audience_options": audience_options,
         "audience_feed_list": feed_list,
+        # With subscribe_url (an email signup page), the button goes there and RSS becomes a link.
+        "subscribe_href": esc(subscribe) if subscribe else "feed.xml",
+        "subscribe_icon": MAIL_ICON if subscribe else RSS_ICON,
+        "rss_link": '<a class="plain" href="feed.xml">%s</a>' % esc(s["feed_link"]) if subscribe else "",
         "releases": body,
         "archive_nav": "" if internal else archive_nav(app, pages, page),
         # The latest release date, never today's: re-rendering unchanged data is byte-identical.

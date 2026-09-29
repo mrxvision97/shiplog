@@ -242,6 +242,25 @@ class LayoutTest(RepoCase):
         self.assertIn("<strong>New A</strong>", page)
         self.assertIn('<a href="#v2-0-0">2.0.0</a></h2>', page)  # no title or summary: the version
 
+    def test_subscribe_button(self):
+        page = self.render({"version": "2.0.0", "date": "2026-09-28", "entries": [entry()]})
+        self.assertIn('<a class="btn" href="feed.xml"><svg', page)  # default: the RSS feed
+        self.assertNotIn('class="plain" href="feed.xml"', page)
+
+        self.config(subscribe_url="https://buttondown.com/acme")
+        page = self.render({"version": "2.0.0", "date": "2026-09-28", "entries": [entry()]})
+        self.assertIn('<a class="btn" href="https://buttondown.com/acme">', page)
+        self.assertIn('<a class="plain" href="feed.xml">Atom/RSS feed</a>', page)
+
+        self.config(subscribe_url="javascript:alert(1)")
+        self.write_release({"version": "2.0.0", "date": "2026-09-28", "entries": [entry()]})
+        r = run("render.py", cwd=self.d)
+        self.assertIn("subscribe_url must start with", r.stderr)
+        with open(os.path.join(self.d, "changelog", "demo", "index.html")) as f:
+            page = f.read()
+        self.assertNotIn("javascript:", page)
+        self.assertIn('<a class="btn" href="feed.xml">', page)
+
     def test_image_needs_alt_text(self):
         self.write_release({"version": "2.0.0", "date": "2026-09-28", "title": "X",
                             "image": {"url": "https://x.test/a.png"}, "entries": [entry()]})
