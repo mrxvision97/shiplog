@@ -7,7 +7,9 @@ description: Write and publish structured, plain-language changelogs for any app
 
 Shiplog turns raw git history into release notes that customers, support, and internal teams can actually use. Each release is stored as a small JSON file in the repo (the source of truth). Scripts validate it and generate the outputs: `CHANGELOG.md`, an accessible static HTML page, Atom feeds and a JSON feed.
 
-The scripts are Python 3.10+ and use only the standard library. They work in any git repository, from any folder inside it: the repo root is found automatically. Every step is one command: `python SCRIPTS/shiplog.py <command>`, where `SCRIPTS` is this skill's `scripts/` directory. Below, `shiplog` is short for that.
+The scripts work in any git repository, from any folder inside it: the repo root is found automatically. Every step is one command: `python3 SCRIPTS/shiplog.py <command>`, where `SCRIPTS` is this skill's `scripts/` directory. Below, `shiplog` is short for that.
+
+**Requirement: Python 3.10+ and git.** Before the first command in a session, run `python3 --version` (on Windows, `python --version` or `py -3 --version`, and use that command instead of `python3`). If Python is missing or older than 3.10, stop and tell the user plainly that Shiplog needs Python 3.10 or newer, with the install command for their system: `brew install python` (macOS), `winget install Python.Python.3.12` (Windows), `sudo apt install python3` (Debian/Ubuntu), or https://www.python.org/downloads/. Don't try to do the steps by hand instead.
 
 ## Why the structure matters
 

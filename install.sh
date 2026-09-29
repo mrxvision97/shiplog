@@ -5,6 +5,8 @@
 #                           (commit it and everyone on the team gets the skill)
 #   sh install.sh --user    into ~/.claude/skills/shiplog, for all your projects
 #
+# Requires git and Python 3.10+ (checked at the end).
+#
 # Without a local copy of Shiplog, it downloads the latest version from GitHub:
 #   curl -fsSL https://raw.githubusercontent.com/mrxvision97/shiplog/main/install.sh | sh
 #   curl -fsSL https://raw.githubusercontent.com/mrxvision97/shiplog/main/install.sh | sh -s -- --user
@@ -39,5 +41,36 @@ cp -R "$src" "$dest"
 find "$dest" -name __pycache__ -type d -prune -exec rm -rf {} +
 
 echo "Installed Shiplog to $dest"
-echo "Next: open Claude Code in your repo and say \"Set up a changelog for this repo\"."
-command -v python3 >/dev/null || echo "Note: Shiplog needs Python 3.10+ (python3 was not found)."
+
+# Shiplog's scripts need Python 3.10+. Say so clearly if it isn't there.
+found=""
+for py in python3 python; do
+  if command -v "$py" >/dev/null 2>&1; then
+    ver="$("$py" -c 'import sys; print("%d.%d" % sys.version_info[:2])' 2>/dev/null || true)"
+    [ -n "$ver" ] || continue
+    if "$py" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null; then
+      found="$py"; break
+    fi
+    old="$py $ver"
+  fi
+done
+
+if [ -n "$found" ]; then
+  echo "Found Python $ver ($found)."
+  echo "Next: open Claude Code in your repo and say \"Set up a changelog for this repo\"."
+else
+  cat >&2 <<MSG
+
+  !! Shiplog needs Python 3.10 or newer, and ${old:+only found $old}${old:-none was found}.
+     The skill is installed, but its commands won't run until Python is available.
+
+     macOS:          brew install python
+     Windows:        winget install Python.Python.3.12
+     Debian/Ubuntu:  sudo apt install python3
+     Fedora/RHEL:    sudo dnf install python3
+     Or download it: https://www.python.org/downloads/
+
+     Then check with: python3 --version
+
+MSG
+fi

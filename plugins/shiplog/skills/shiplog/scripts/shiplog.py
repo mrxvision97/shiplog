@@ -17,6 +17,11 @@ import importlib
 import os
 import sys
 
+if sys.version_info < (3, 10):
+    sys.exit("shiplog: Python 3.10 or newer is required, but this is Python %d.%d. "
+             "Install a newer Python (https://www.python.org/downloads/) and run this with python3."
+             % sys.version_info[:2])
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 

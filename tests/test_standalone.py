@@ -205,5 +205,57 @@ class InstallTest(unittest.TestCase):
             self.assertTrue(os.path.exists(os.path.join(d, ".shiplog.json")))
 
 
+class PythonRequirementTest(unittest.TestCase):
+    """Missing or old Python must be reported clearly, never as a confusing error."""
+
+    def fake_path(self, d, python_version=None):
+        """A PATH with the tools install.sh needs, plus an optional fake python3."""
+        import shutil
+        bin_dir = os.path.join(d, "bin")
+        os.makedirs(bin_dir)
+        for tool in ("sh", "git", "dirname", "cp", "rm", "mkdir", "find", "cat"):
+            os.symlink(shutil.which(tool), os.path.join(bin_dir, tool))
+        if python_version:
+            with open(os.path.join(bin_dir, "python3"), "w") as f:
+                f.write('#!/bin/sh\ncase "$*" in *"print"*) echo %s;; *) exit 1;; esac\n' % python_version)
+            os.chmod(os.path.join(bin_dir, "python3"), 0o755)
+        return bin_dir
+
+    def install(self, path):
+        with tempfile.TemporaryDirectory() as repo:
+            git(repo, "init", "-q")
+            return subprocess.run([self.sh, os.path.join(ROOT, "install.sh")], cwd=repo, capture_output=True,
+                                  text=True, env={"PATH": path, "HOME": repo})
+
+    def setUp(self):
+        import shutil
+        self.sh = shutil.which("sh")
+
+    def test_installer_says_when_python_is_missing(self):
+        with tempfile.TemporaryDirectory() as d:
+            r = self.install(self.fake_path(d))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("Shiplog needs Python 3.10 or newer, and none was found", r.stderr)
+        self.assertIn("winget install Python.Python.3.12", r.stderr)
+
+    def test_installer_says_when_python_is_too_old(self):
+        with tempfile.TemporaryDirectory() as d:
+            r = self.install(self.fake_path(d, "3.8"))
+        self.assertIn("only found python3 3.8", r.stderr)
+
+    def test_installer_confirms_a_good_python(self):
+        r = self.install(os.path.dirname(PY) + os.pathsep + os.environ["PATH"])
+        self.assertIn("Found Python", r.stdout)
+        self.assertEqual(r.stderr, "")
+
+    def test_scripts_explain_an_old_python(self):
+        shim = ("import sys, runpy; sys.version_info = (3, 8, 0, 'final', 0); "
+                "sys.argv = [sys.argv[1], 'validate']; runpy.run_path(sys.argv[0], run_name='__main__')")
+        r = subprocess.run([PY, "-c", shim, os.path.join(ROOT, "plugins", "shiplog", "skills", "shiplog",
+                                                         "scripts", "shiplog.py")], capture_output=True, text=True)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("Python 3.10 or newer is required, but this is Python 3.8", r.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

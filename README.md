@@ -17,6 +17,22 @@ Shiplog makes impact a required part of every release:
 
 Claude drafts the entries from your commits and PRs, asks about any impact it can't infer (all questions in one message), then validates and renders everything. A CI check blocks release tags that don't have a complete entry.
 
+## Requirements
+
+- **git**
+- **Python 3.10 or newer.** Shiplog's scripts are written in Python, whatever language your project uses. They use only the standard library, so there's nothing to `pip install`.
+
+Check with `python3 --version`. Python is already installed on most macOS and Linux machines and on every GitHub Actions runner. If you need it:
+
+| System | Install |
+|---|---|
+| macOS | `brew install python`, or the installer from [python.org](https://www.python.org/downloads/) |
+| Windows | `winget install Python.Python.3.12`, or the installer from [python.org](https://www.python.org/downloads/) (tick "Add python.exe to PATH") |
+| Debian / Ubuntu | `sudo apt install python3` |
+| Fedora / RHEL | `sudo dnf install python3` |
+
+The installer below checks this for you, and Claude checks it before running Shiplog.
+
 ## Install
 
 Shiplog works in any git repository: any language, with or without tags, one app or a monorepo.
@@ -40,13 +56,13 @@ curl -fsSL https://raw.githubusercontent.com/mrxvision97/shiplog/main/install.sh
 /plugin install shiplog@shiplog
 ```
 
-From a local clone, `sh install.sh` (or `sh install.sh --user`) does the same without downloading. Requires Python 3.10+ and git. There are no other dependencies.
+From a local clone, `sh install.sh` (or `sh install.sh --user`) does the same without downloading.
 
 On Windows, run the install command in Git Bash (included with Git for Windows).
 
 ### Works with your stack
 
-Shiplog only needs git and Python 3.10+, whatever your project is written in. It was tested on real projects in each of these ecosystems:
+Shiplog only needs git and Python 3.10+ (see [Requirements](#requirements)), whatever your project is written in. It was tested on real projects in each of these ecosystems:
 
 | Ecosystem | Tested on | Detected from |
 |---|---|---|
@@ -96,7 +112,7 @@ Deploy `changelog/<app>/` anywhere static: GitHub Pages, S3, Netlify, or your do
 Ask Claude to "set up Shiplog CI", or run:
 
 ```bash
-python ~/.claude/skills/shiplog/scripts/init.py --name "My App" --with-ci
+python3 ~/.claude/skills/shiplog/scripts/init.py --name "My App" --with-ci
 ```
 
 This vendors the scripts into `.shiplog/scripts/` and adds `.github/workflows/shiplog.yml`. The workflow:
@@ -176,7 +192,7 @@ Release files and the config have JSON Schemas (`schema/`), so editors autocompl
 
 ## Commands
 
-Everything runs through one entry point, and you can use it without Claude: `python scripts/shiplog.py <command>`.
+Everything runs through one entry point, and you can use it without Claude: `python3 scripts/shiplog.py <command>`.
 
 | Command | Does |
 |---|---|
@@ -194,7 +210,7 @@ Shiplog's own history is kept with Shiplog: see [`CHANGELOG.md`](CHANGELOG.md) a
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Run the tests with `python -m unittest discover tests`.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Run the tests with `python3 -m unittest discover tests`.
 
 ## License
 

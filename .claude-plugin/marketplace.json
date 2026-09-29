@@ -1,6 +1,8 @@
 {
   "name": "shiplog",
-  "owner": { "name": "Aman Kumar" },
+  "owner": {
+    "name": "Aman Kumar"
+  },
   "metadata": {
     "description": "Plain-language, impact-aware changelogs for every app you ship."
   },
@@ -8,7 +10,7 @@
     {
       "name": "shiplog",
       "source": "./plugins/shiplog",
-      "description": "Write structured changelogs (what changed, who is affected, what to do) and publish an accessible changelog page, feed and CHANGELOG.md.",
+      "description": "Write structured changelogs (what changed, who is affected, what to do) and publish an accessible changelog page, feed and CHANGELOG.md. Requires Python 3.10+ and git.",
       "version": "0.3.0"
     }
   ]
