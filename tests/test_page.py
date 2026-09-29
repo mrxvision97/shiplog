@@ -132,7 +132,7 @@ class PageTest(RepoCase):
         support = ET.fromstring(self.read("feed-support.xml"))
         self.assertEqual(len(support.findall(ATOM + "entry")), 7)  # "everyone" entries reach all
         index = self.read("index.html")
-        self.assertIn('href="feed-admins.xml">Account admins</a>', index)
+        self.assertNotIn('href="feed-admins.xml">', index.split("</head>")[1])  # no visible feed links
         self.assertIn('type="application/atom+xml" title="Demo changelog (Account admins)" href="feed-admins.xml"', index)
 
     def test_translated_strings(self):
@@ -250,7 +250,7 @@ class LayoutTest(RepoCase):
         self.config(subscribe_url="https://buttondown.com/acme")
         page = self.render({"version": "2.0.0", "date": "2026-09-28", "entries": [entry()]})
         self.assertIn('<a class="btn" href="https://buttondown.com/acme">', page)
-        self.assertIn('<a class="plain" href="feed.xml">Atom/RSS feed</a>', page)
+        self.assertNotIn('<a class="plain" href="feed.xml">', page)  # no visible feed link
 
         self.config(subscribe_url="javascript:alert(1)")
         self.write_release({"version": "2.0.0", "date": "2026-09-28", "entries": [entry()]})

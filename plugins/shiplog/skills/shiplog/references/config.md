@@ -43,7 +43,7 @@ Lives at the repo root. It holds either a single app object, or `{"apps": [...]}
 | `lang` | `en` | Page language attribute (for screen readers). |
 | `audiences` | `[]` | Groups entries can target. `everyone` is always available. |
 | `theme.accent_color` | `#4f46e5` | Hex color for link underlines and controls. A contrast warning prints if it's too low. |
-| `subscribe_url` | none | Your email signup page (Buttondown, Mailchimp, Substack, a `mailto:` link…). The Subscribe button goes there, and the RSS feed becomes a secondary "Atom/RSS feed" link. Without it, Subscribe opens the RSS feed. Shiplog doesn't send email itself. |
+| `subscribe_url` | none | Your email signup page (Buttondown, Mailchimp, Substack, a `mailto:` link…). The Subscribe button goes there. Without it, Subscribe opens the Atom feed. Shiplog doesn't send email itself. |
 | `theme.logo_url` | none | Logo shown in the header. Also the Open Graph image unless `theme.og_image` is set. |
 | `theme.og_image` | none | Image for link previews (`og:image`). |
 | `page_size` | `20` | Releases on `index.html`. Older ones go to one archive page per year (`2025.html`, …). `0` puts everything on one page. |
@@ -54,7 +54,7 @@ Lives at the repo root. It holds either a single app object, or `{"apps": [...]}
 
 ## Feeds
 
-`feed.xml` has every release. Each audience also gets `feed-<id>.xml`, with only the entries for that audience plus `everyone` entries. The page links all of them.
+`feed.xml` has every release. Each audience also gets `feed-<id>.xml`, with only the entries for that audience plus `everyone` entries. The page doesn't show links to them, but lists them in its metadata so feed readers find them from the page URL.
 
 ## Translating the page
 

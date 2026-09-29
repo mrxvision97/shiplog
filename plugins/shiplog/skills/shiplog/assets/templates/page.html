@@ -49,10 +49,6 @@ header.site h1 { font-size: clamp(2.2rem, 5vw, 3rem); line-height: 1.1; letter-s
   background: var(--fg); color: var(--bg); text-decoration: none; font-weight: 600; }
 .btn:hover { opacity: .88; }
 .btn svg { width: 1em; height: 1em; }
-details.feeds { position: relative; }
-details.feeds summary { cursor: pointer; color: var(--muted); }
-details.feeds ul { list-style: none; margin: .5rem 0 0; padding: .6rem .9rem; border: 1px solid var(--border); border-radius: .6rem; background: var(--bg); }
-details.feeds li { margin: .15rem 0; }
 .subscribe .plain { color: var(--muted); }
 .banner { background: var(--danger-bg); color: var(--danger-fg); border: 1px solid var(--danger-border); padding: .75rem 1rem; border-radius: .6rem; margin: 0 0 1.5rem; }
 
@@ -136,8 +132,6 @@ footer.site { color: var(--faint); font-size: .9rem; padding-top: 2.5rem; }
   <p class="lede">{{intro}}</p>
   <div class="subscribe">
     <a class="btn" href="{{subscribe_href}}">{{subscribe_icon}}{{s.subscribe}}</a>
-    {{rss_link}}
-    {{audience_feed_list}}
     <a class="plain" href="changelog.json">{{s.json_link}}</a>
   </div>
 </header>

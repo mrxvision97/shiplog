@@ -334,9 +334,6 @@ def render_html(app, releases, internal, page="index.html", pages=None):
         subscribe = ""
     feed_links = "".join('<link rel="alternate" type="application/atom+xml" title="%s (%s)" href="%s">\n'
                          % (esc(s["title"].format(name=name)), esc(lbl), fname) for _, fname, lbl in feeds)
-    feed_list = ('<details class="feeds"><summary>%s</summary><ul>%s</ul></details>' % (
-        esc(s["audience_feeds"]), "".join('<li><a href="%s">%s</a></li>' % (fname, esc(lbl))
-                                          for _, fname, lbl in feeds))) if feeds else ""
     body = "\n".join(render_release(r, app, internal) for r in shown) or "<p>%s</p>" % esc(s["no_releases"])
     suffix = (s["internal_suffix"] if internal else "") + (" – %s" % label if label else "")
     page_title = s["title"].format(name=name) + suffix
@@ -362,11 +359,9 @@ def render_html(app, releases, internal, page="index.html", pages=None):
         "internal_banner": ('<p class="banner" role="note"><strong>%s</strong></p>' % esc(s["internal_banner"])
                             if internal else ""),
         "audience_options": audience_options,
-        "audience_feed_list": feed_list,
-        # With subscribe_url (an email signup page), the button goes there and RSS becomes a link.
+        # With subscribe_url (an email signup page) the button goes there; otherwise to the feed.
         "subscribe_href": esc(subscribe) if subscribe else "feed.xml",
         "subscribe_icon": MAIL_ICON if subscribe else RSS_ICON,
-        "rss_link": '<a class="plain" href="feed.xml">%s</a>' % esc(s["feed_link"]) if subscribe else "",
         "releases": body,
         "archive_nav": "" if internal else archive_nav(app, pages, page),
         # The latest release date, never today's: re-rendering unchanged data is byte-identical.
